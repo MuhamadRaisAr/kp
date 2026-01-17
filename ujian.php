@@ -1,21 +1,23 @@
 <?php
-// Panggil file-file yang dibutuhkan
 require_once 'includes/auth_check.php';
 require_once 'includes/header.php';
 require_once 'includes/koneksi.php';
 
 $judul_halaman = "Manajemen Ujian";
 
-// Pastikan yang login adalah guru
+// pastikan guru
 if (!isset($_SESSION['id_guru']) || empty($_SESSION['id_guru'])) {
-    echo '<div class="container-fluid px-4"><div class="alert alert-danger mt-4">Akses ditolak. Halaman ini hanya untuk Guru.</div></div>';
+    echo '<div class="container-fluid px-4">
+            <div class="alert alert-danger mt-4">
+                Akses ditolak. Halaman ini hanya untuk Guru.
+            </div>
+          </div>';
     require_once 'includes/footer.php';
     exit();
 }
-$id_guru_login = (int)$_SESSION['id_guru'];
 
-// Waktu saat ini (untuk perbandingan)
-$waktu_sekarang = time(); // Unix timestamp
+$id_guru_login = (int)$_SESSION['id_guru'];
+$waktu_sekarang = time();
 ?>
 
 <div class="container-fluid px-4">
@@ -25,16 +27,18 @@ $waktu_sekarang = time(); // Unix timestamp
         <li class="breadcrumb-item active">Manajemen Ujian</li>
     </ol>
 
-    <?php if (isset($_GET['status']) && $_GET['status'] == 'sukses_hapus'): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Berhasil!</strong> Ujian telah dihapus.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <?php elseif (isset($_GET['status']) && $_GET['status'] == 'gagal_hapus'): ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Gagal!</strong> <?php echo isset($_GET['msg']) ? htmlspecialchars(urldecode($_GET['msg'])) : 'Terjadi kesalahan saat menghapus ujian.'; ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    <?php if (isset($_GET['status'])): ?>
+        <?php if ($_GET['status'] == 'sukses_hapus'): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                Ujian berhasil dihapus.
+                <button class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php elseif ($_GET['status'] == 'sukses_buka'): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                Ujian berhasil diperbarui / dibuka kembali.
+                <button class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <div class="mb-3">
@@ -48,6 +52,7 @@ $waktu_sekarang = time(); // Unix timestamp
             <i class="fas fa-list-alt me-1"></i>
             Daftar Ujian yang Anda Buat
         </div>
+
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
@@ -61,75 +66,117 @@ $waktu_sekarang = time(); // Unix timestamp
                             <th>Durasi</th>
                             <th>Jadwal</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th width="160">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
-                        // Query untuk mengambil semua ujian yang dibuat oleh guru ini
-                        $query_ujian = "SELECT 
-                                            u.id_ujian, u.judul_ujian, u.durasi_menit, u.waktu_mulai, u.waktu_selesai, u.status_ujian,
-                                            mp.nama_mapel, 
-                                            k.nama_kelas, 
-                                            ta.tahun_ajaran, ta.semester
-                                        FROM ujian u
-                                        JOIN mengajar m ON u.id_mengajar = m.id_mengajar
-                                        JOIN mata_pelajaran mp ON m.id_mapel = mp.id_mapel
-                                        JOIN kelas k ON m.id_kelas = k.id_kelas
-                                        JOIN tahun_ajaran ta ON m.id_tahun_ajaran = ta.id_tahun_ajaran
-                                        WHERE m.id_guru = ?
-                                        ORDER BY u.waktu_mulai DESC";
-                        
-                        $stmt = mysqli_prepare($koneksi, $query_ujian);
+                        $sql = "SELECT 
+                                    u.id_ujian,
+                                    u.judul_ujian,
+                                    u.durasi_menit,
+                                    u.waktu_mulai,
+                                    u.waktu_selesai,
+                                    u.status_ujian,
+                                    mp.nama_mapel,
+                                    k.nama_kelas,
+                                    ta.tahun_ajaran,
+                                    ta.semester
+                                FROM ujian u
+                                JOIN mengajar m ON u.id_mengajar = m.id_mengajar
+                                JOIN mata_pelajaran mp ON m.id_mapel = mp.id_mapel
+                                JOIN kelas k ON m.id_kelas = k.id_kelas
+                                JOIN tahun_ajaran ta ON m.id_tahun_ajaran = ta.id_tahun_ajaran
+                                WHERE m.id_guru = ?
+                                ORDER BY u.waktu_mulai DESC";
+
+                        $stmt = mysqli_prepare($koneksi, $sql);
                         mysqli_stmt_bind_param($stmt, "i", $id_guru_login);
                         mysqli_stmt_execute($stmt);
                         $result = mysqli_stmt_get_result($stmt);
-                        
+
                         if (mysqli_num_rows($result) > 0) {
-                            $nomor = 1;
+                            $no = 1;
                             while ($row = mysqli_fetch_assoc($result)) {
-                                $jadwal = date('d M Y, H:i', strtotime($row['waktu_mulai'])) . " - " . date('H:i', strtotime($row['waktu_selesai']));
-                                
-                                $status_badge = 'bg-secondary';
-                                if ($row['status_ujian'] == 'Published') $status_badge = 'bg-success';
-                                if ($row['status_ujian'] == 'Selesai') $status_badge = 'bg-dark';
-                                
-                                // Waktu mulai ujian dalam format timestamp
-                                $waktu_mulai_ts = strtotime($row['waktu_mulai']);
-                                
+
+                                $mulai_ts = strtotime($row['waktu_mulai']);
+                                $selesai_ts = strtotime($row['waktu_selesai']);
+
+                                $jadwal = date('d M Y H:i', $mulai_ts) . " - " . date('H:i', $selesai_ts);
+
+                                $badge = 'bg-secondary';
+                                if ($row['status_ujian'] == 'Published') $badge = 'bg-success';
+                                if ($row['status_ujian'] == 'Selesai') $badge = 'bg-dark';
+
                                 echo "<tr>";
-                                echo "<td>" . $nomor++ . "</td>";
-                                echo "<td>" . htmlspecialchars($row['judul_ujian']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['nama_mapel']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['nama_kelas']) . "</td>";
-                                echo "<td>" . htmlspecialchars($row['tahun_ajaran'] . " (" . $row['semester'] . ")") . "</td>";
-                                echo "<td>" . $row['durasi_menit'] . " Menit</td>";
-                                echo "<td>" . $jadwal . "</td>";
-                                echo "<td><span class='badge " . $status_badge . "'>" . $row['status_ujian'] . "</span></td>";
-                                echo "<td>
-                                        <a href='ujian_detail.php?id=" . $row['id_ujian'] . "' class='btn btn-info btn-sm me-1' title='Kelola Soal'><i class='fas fa-tasks'></i></a>
-                                        <a href='ujian_hasil.php?id=" . $row['id_ujian'] . "' class='btn btn-success btn-sm me-1' title='Lihat Hasil'><i class='fas fa-poll'></i></a>";
+                                echo "<td>".$no++."</td>";
+                                echo "<td>".htmlspecialchars($row['judul_ujian'])."</td>";
+                                echo "<td>".htmlspecialchars($row['nama_mapel'])."</td>";
+                                echo "<td>".htmlspecialchars($row['nama_kelas'])."</td>";
+                                echo "<td>".htmlspecialchars($row['tahun_ajaran']." (".$row['semester'].")")."</td>";
+                                echo "<td>".$row['durasi_menit']." Menit</td>";
+                                echo "<td>".$jadwal."</td>";
+                                echo "<td><span class='badge $badge'>".$row['status_ujian']."</span></td>";
 
-                                // Tombol Edit (Hanya jika Draft)
-                                if ($row['status_ujian'] == 'Draft') {
-                                    echo "<a href='ujian_edit.php?id=" . $row['id_ujian'] . "' class='btn btn-warning btn-sm me-1' title='Edit Ujian'><i class='fas fa-edit'></i></a>";
+                                echo "<td>";
+
+                                // detail
+                                echo "<a href='ujian_detail.php?id=".$row['id_ujian']."' class='btn btn-info btn-sm me-1'>
+                                        <i class='fas fa-tasks'></i>
+                                      </a>";
+
+                                // hasil
+                                echo "<a href='ujian_hasil.php?id=".$row['id_ujian']."' class='btn btn-success btn-sm me-1'>
+                                        <i class='fas fa-poll'></i>
+                                      </a>";
+                                // EDIT (Draft / sebelum mulai)
+                                if (
+                                    $row['status_ujian'] == 'Draft' ||
+                                    ($row['status_ujian'] == 'Published' && $waktu_sekarang < $mulai_ts)
+                                ) {
+                                    echo "<a href='ujian_edit.php?id=".$row['id_ujian']."' 
+                                            class='btn btn-warning btn-sm me-1'
+                                            title='Edit Ujian'>
+                                            <i class='fas fa-edit'></i>
+                                        </a>";
                                 }
 
-                                // ==========================================
-                                // PERUBAHAN LOGIKA TOMBOL HAPUS
-                                // ==========================================
-                                // Tampilkan Hapus jika 'Draft' ATAU ('Published' TAPI belum mulai)
-                                if ($row['status_ujian'] == 'Draft' || ($row['status_ujian'] == 'Published' && $waktu_sekarang < $waktu_mulai_ts)) {
-                                    echo "<a href='proses_ujian_hapus.php?id=" . $row['id_ujian'] . "' class='btn btn-danger btn-sm' title='Hapus Ujian' onclick='return confirm(\"Yakin ingin menghapus ujian ini? SEMUA SOAL di dalamnya juga akan terhapus.\");'><i class='fas fa-trash'></i></a>";
+                                // BUKA KEMBALI (Published & sudah lewat)
+                                if (
+                                    $row['status_ujian'] == 'Published' &&
+                                    $waktu_sekarang > $selesai_ts
+                                ) {
+                                    echo "<a href='ujian_edit.php?id=".$row['id_ujian']."&mode=buka_ulang' 
+                                            class='btn btn-primary btn-sm me-1'
+                                            title='Buka Kembali Ujian'>
+                                            <i class='fas fa-redo'></i>
+                                        </a>";
                                 }
-                                // ==========================================
-                                
+
+
+                                // HAPUS (aman)
+                                if (
+                                    $row['status_ujian'] == 'Draft' ||
+                                    ($row['status_ujian'] == 'Published' && $waktu_sekarang < $mulai_ts)
+                                ) {
+                                    echo "<a href='proses_ujian_hapus.php?id=".$row['id_ujian']."' 
+                                              class='btn btn-danger btn-sm'
+                                              onclick='return confirm(\"Yakin hapus ujian ini?\")'>
+                                            <i class='fas fa-trash'></i>
+                                          </a>";
+                                }
+
                                 echo "</td>";
                                 echo "</tr>";
                             }
                         } else {
-                            echo "<tr><td colspan='9' class='text-center'>Anda belum membuat ujian.</td></tr>";
+                            echo "<tr>
+                                    <td colspan='9' class='text-center'>
+                                        Belum ada ujian.
+                                    </td>
+                                  </tr>";
                         }
+
                         mysqli_stmt_close($stmt);
                         ?>
                     </tbody>
@@ -139,7 +186,4 @@ $waktu_sekarang = time(); // Unix timestamp
     </div>
 </div>
 
-<?php
-// Panggil file footer.php
-require_once 'includes/footer.php';
-?>
+<?php require_once 'includes/footer.php'; ?>

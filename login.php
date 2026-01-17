@@ -108,10 +108,6 @@
                     <i class="fas fa-sign-in-alt me-2"></i> Login
                 </button>
             </div>
-            
-            <div class="text-center mt-3">
-                <a href="lupa_password.php" class="text-decoration-none">Lupa Password?</a>
-            </div>
         </form>
     </div>
 </div>
