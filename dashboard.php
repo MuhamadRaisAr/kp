@@ -146,7 +146,7 @@ mysqli_stmt_close($stmt_pengumuman);
                         </div>
                         <i class="fas fa-user-graduate fa-3x opacity-50"></i>
                     </div>
-                    <a class="card-footer text-white clearfix small z-1" href="siswa.php">
+                    <a class="card-footer text-white clearfix small z-1" href="modules/siswa/siswa.php">
                         <span class="float-start">Lihat Detail</span>
                         <span class="float-end"><i class="fas fa-angle-right"></i></span>
                     </a>
@@ -161,7 +161,7 @@ mysqli_stmt_close($stmt_pengumuman);
                         </div>
                         <i class="fas fa-chalkboard-teacher fa-3x opacity-50"></i>
                     </div>
-                     <a class="card-footer text-white clearfix small z-1" href="guru.php">
+                     <a class="card-footer text-white clearfix small z-1" href="modules/guru/guru.php">
                         <span class="float-start">Lihat Detail</span>
                         <span class="float-end"><i class="fas fa-angle-right"></i></span>
                     </a>
@@ -176,7 +176,7 @@ mysqli_stmt_close($stmt_pengumuman);
                         </div>
                         <i class="fas fa-door-open fa-3x opacity-50"></i>
                     </div>
-                     <a class="card-footer text-white clearfix small z-1" href="kelas.php">
+                     <a class="card-footer text-white clearfix small z-1" href="modules/kelas/kelas.php">
                         <span class="float-start">Lihat Detail</span>
                         <span class="float-end"><i class="fas fa-angle-right"></i></span>
                     </a>
