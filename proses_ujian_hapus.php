@@ -51,20 +51,19 @@ mysqli_stmt_close($stmt_cek); // Tutup statement cek
 // ==========================================
 // PERUBAHAN LOGIKA VALIDASI HAPUS
 // ==========================================
-$boleh_hapus = false;
-$waktu_mulai_ts = strtotime($data_ujian['waktu_mulai']);
-
-if ($data_ujian['status_ujian'] == 'Draft') {
-    $boleh_hapus = true;
-} elseif ($data_ujian['status_ujian'] == 'Published' && $waktu_sekarang < $waktu_mulai_ts) {
-    $boleh_hapus = true;
-}
-
-if (!$boleh_hapus) {
-    // Jika tidak boleh dihapus (misal: Selesai atau Published dan sudah mulai)
-    header("Location: ujian.php?status=gagal_hapus&msg=" . urlencode("Ujian tidak bisa dihapus (status: " . $data_ujian['status_ujian'] . ")."));
-    exit();
-}
+// ==========================================
+// VALIDASI HAPUS DILEWATI
+// ==========================================
+// $boleh_hapus = false;
+// $waktu_mulai_ts = strtotime($data_ujian['waktu_mulai']);
+// if ($data_ujian['status_ujian'] == 'Draft') {
+//     $boleh_hapus = true;
+// } elseif ($data_ujian['status_ujian'] == 'Published' && $waktu_sekarang < $waktu_mulai_ts) {
+//     $boleh_hapus = true;
+// }
+// if (!$boleh_hapus) { ... }
+// Kita izinkan guru menghapus kapan saja
+// ==========================================
 // ==========================================
 
 // 3. Hapus Ujian dari Database (Cascade akan hapus soal dll)

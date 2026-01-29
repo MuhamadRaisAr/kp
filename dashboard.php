@@ -99,6 +99,12 @@ mysqli_stmt_close($stmt_pengumuman);
 ?>
 
 <div class="container-fluid px-4">
+    <?php if (isset($_GET['login']) && $_GET['login'] == 'success'): ?>
+    <div class="alert alert-success mt-3" role="alert">
+        <strong>Login Berhasil!</strong> Selamat datang kembali, Anda telah berhasil login.
+    </div>
+    <?php endif; ?>
+
     <h1 class="mt-4">Selamat Datang, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
     <p class="lead">Anda login sebagai <strong><?php echo htmlspecialchars(ucfirst($role)); ?></strong>.</p>
 

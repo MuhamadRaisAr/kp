@@ -46,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $filter_mapel = $_POST['filter_mapel'];
 
     // Buat URL untuk redirect kembali ke halaman absensi harian dengan semua filter tetap terpilih
-    $redirect_url = "absensi.php?tanggal={$tanggal}&tahun_ajaran={$filter_tahun_ajaran}&kelas={$filter_kelas}&mapel={$filter_mapel}&status=sukses_simpan";
+    // Buat URL untuk redirect kembali ke halaman absensi harian (TAMPILAN AWAL / Reset Filter)
+    $redirect_url = "absensi.php?status=sukses_simpan";
     
     header("Location: " . $redirect_url);
     exit();

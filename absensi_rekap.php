@@ -19,7 +19,6 @@ if ($role !== 'guru' || !$id_guru_login) {
 $selected_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : date('Y');
 $selected_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : date('m');
 $selected_kelas = isset($_GET['kelas']) ? (int)$_GET['kelas'] : '';
-$selected_mapel = isset($_GET['mapel']) ? (int)$_GET['mapel'] : '';
 
 $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 ?>
@@ -53,12 +52,17 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                             <?php endfor; ?>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="kelas" class="form-label">Kelas</label>
                         <select name="kelas" id="kelas" class="form-select" required>
                             <option value="">-- Pilih Kelas --</option>
                             <?php 
-                            $query_kelas = "SELECT DISTINCT k.id_kelas, k.nama_kelas FROM kelas k JOIN mengajar m ON k.id_kelas = m.id_kelas WHERE m.id_guru = {$id_guru_login} ORDER BY k.nama_kelas ASC";
+                            // Tampilkan kelas yang diajar oleh guru ini
+                            $query_kelas = "SELECT DISTINCT k.id_kelas, k.nama_kelas 
+                                            FROM kelas k 
+                                            JOIN mengajar m ON k.id_kelas = m.id_kelas 
+                                            WHERE m.id_guru = {$id_guru_login} 
+                                            ORDER BY k.nama_kelas ASC";
                             $result_kelas = mysqli_query($koneksi, $query_kelas);
                             while($row = mysqli_fetch_assoc($result_kelas)) {
                                 $selected = ($row['id_kelas'] == $selected_kelas) ? 'selected' : '';
@@ -67,46 +71,57 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                             ?>
                         </select>
                     </div>
-                     <div class="col-md-3">
-                        <label for="mapel" class="form-label">Mata Pelajaran</label>
-                        <select name="mapel" id="mapel" class="form-select" required>
-                            <option value="">-- Pilih Kelas Dulu --</option>
-                        </select>
+                    <div class="col-md-2 d-flex align-items-end">
+                         <button type="submit" class="btn btn-primary w-100">Tampilkan</button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary mt-3">Tampilkan Rekap</button>
             </form>
         </div>
     </div>
 
     <?php
-    if (!empty($selected_bulan) && !empty($selected_tahun) && !empty($selected_kelas) && !empty($selected_mapel)) :
+    if (!empty($selected_bulan) && !empty($selected_tahun) && !empty($selected_kelas)) :
         // Dapatkan ID tahun ajaran yang sedang aktif
         $active_ta_result = mysqli_query($koneksi, "SELECT id_tahun_ajaran FROM tahun_ajaran WHERE status_aktif = 'Aktif' LIMIT 1");
         
         if ($active_ta_result && mysqli_num_rows($active_ta_result) > 0) {
             $active_id_tahun_ajaran = mysqli_fetch_assoc($active_ta_result)['id_tahun_ajaran'];
 
+            // 1. Ambil semua id_mengajar untuk guru & kelas ini (di tahun ajaran aktif)
+            //    Kita ambil semua mapel yang diajar di kelas ini
             $q_mengajar = "SELECT id_mengajar FROM mengajar 
                            WHERE id_guru = {$id_guru_login} 
                              AND id_kelas = {$selected_kelas} 
-                             AND id_mapel = {$selected_mapel} 
                              AND id_tahun_ajaran = {$active_id_tahun_ajaran}";
             $res_mengajar = mysqli_query($koneksi, $q_mengajar);
             
-            if(mysqli_num_rows($res_mengajar) > 0) {
-                $id_mengajar = mysqli_fetch_assoc($res_mengajar)['id_mengajar'];
+            $ids_mengajar = [];
+            while($rm = mysqli_fetch_assoc($res_mengajar)) {
+                $ids_mengajar[] = $rm['id_mengajar'];
+            }
+
+            if(count($ids_mengajar) > 0) {
+                // Konversi array ke string untuk query IN (...)
+                $ids_mengajar_str = implode(',', $ids_mengajar);
                 
                 $q_siswa = "SELECT id_siswa, nama_lengkap FROM siswa WHERE id_kelas = {$selected_kelas} ORDER BY nama_lengkap ASC";
                 $res_siswa = mysqli_query($koneksi, $q_siswa);
 
-                // LOGIKA TAHUN DIPERBAIKI: Langsung gunakan $selected_tahun dari filter
+                // LOGIKA TAHUN: Gunakan $selected_tahun dari filter
                 $tahun_numerik = $selected_tahun;
 
                 $absensi_data = [];
-                $q_absensi = "SELECT id_siswa, DAY(tanggal) as tgl, status FROM absensi WHERE id_mengajar = {$id_mengajar} AND MONTH(tanggal) = {$selected_bulan} AND YEAR(tanggal) = {$tahun_numerik}";
+                // Ambil data absensi berdasarkan list id_mengajar
+                $q_absensi = "SELECT id_siswa, DAY(tanggal) as tgl, status 
+                              FROM absensi 
+                              WHERE id_mengajar IN ({$ids_mengajar_str}) 
+                                AND MONTH(tanggal) = {$selected_bulan} 
+                                AND YEAR(tanggal) = {$tahun_numerik}";
                 $res_absensi = mysqli_query($koneksi, $q_absensi);
+                
                 while($row = mysqli_fetch_assoc($res_absensi)) {
+                    // Jika ada duplikasi data (beda mapel di hari sama), data terakhir akan menimpa
+                    // Idealnya mungkin perlu logika 'Prioritas' (misal jika ada Alfa, tampilkan Alfa), tapi ini cukup standard.
                     $absensi_data[$row['id_siswa']][$row['tgl']] = $row['status'];
                 }
                 
@@ -119,15 +134,15 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                 <i class="fas fa-info-circle"></i> Klik pada status (H, S, I, A, -) untuk mengisi absensi harian.
             </div>
             <div class="table-responsive">
-                <table class="table table-bordered table-sm" style="font-size: 0.8rem;">
-                    <thead class="text-center">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="text-center table-dark">
                         <tr>
-                            <th class="align-middle" rowspan="2">Nama Siswa</th>
-                            <th colspan="<?php echo $jumlah_hari; ?>">Tanggal</th>
+                            <th class="align-middle py-3" rowspan="2" style="min-width: 250px;">Nama Siswa</th>
+                            <th colspan="<?php echo $jumlah_hari; ?>" class="py-2">Tanggal</th>
                         </tr>
                         <tr>
                             <?php for ($i = 1; $i <= $jumlah_hari; $i++): ?>
-                                <th><?php echo $i; ?></th>
+                                <th class="p-2"><?php echo $i; ?></th>
                             <?php endfor; ?>
                         </tr>
                     </thead>
@@ -136,7 +151,7 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                         if(mysqli_num_rows($res_siswa) > 0) {
                             while($siswa = mysqli_fetch_assoc($res_siswa)): ?>
                             <tr>
-                                <td style="min-width: 150px;"><?php echo htmlspecialchars($siswa['nama_lengkap']); ?></td>
+                                <td class="fw-bold text-dark px-3"><?php echo htmlspecialchars($siswa['nama_lengkap']); ?></td>
                                 <?php for ($i = 1; $i <= $jumlah_hari; $i++): 
                                     $status = $absensi_data[$siswa['id_siswa']][$i] ?? '-';
                                     $badge_color = 'secondary';
@@ -146,11 +161,12 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                                     if($status == 'Alfa') $badge_color = 'danger';
 
                                     $tanggal_link = $tahun_numerik . '-' . str_pad($selected_bulan, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
-                                    $link_absensi = "absensi.php?tanggal={$tanggal_link}&kelas={$selected_kelas}&mapel={$selected_mapel}";
+                                    // Link ke absensi.php tanpa parameter mapel (user harus pilih mapel di sana)
+                                    $link_absensi = "absensi.php?tanggal={$tanggal_link}&kelas={$selected_kelas}";
                                 ?>
-                                    <td class="text-center">
-                                        <a href="<?php echo $link_absensi; ?>" title="Input Absensi Tanggal <?php echo $i; ?>" class="text-decoration-none">
-                                            <span class="badge bg-<?php echo $badge_color; ?>"><?php echo substr($status, 0, 1); ?></span>
+                                    <td class="text-center p-1">
+                                        <a href="<?php echo $link_absensi; ?>" title="Input Absensi Tanggal <?php echo $i; ?>" class="text-decoration-none d-block">
+                                            <span class="badge bg-<?php echo $badge_color; ?> py-2 w-100 rounded-0" style="min-width: 25px;"><?php echo substr($status, 0, 1); ?></span>
                                         </a>
                                     </td>
                                 <?php endfor; ?>
@@ -183,47 +199,3 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
 </div>
 
 <?php require_once 'includes/footer.php'; ?>
-
-<!-- JavaScript untuk dropdown dinamis -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const kelasDropdown = document.getElementById('kelas');
-    const mapelDropdown = document.getElementById('mapel');
-    const selectedMapelFromPHP = "<?php echo $selected_mapel; ?>";
-
-    function fetchMapel() {
-        const idKelas = kelasDropdown.value;
-        mapelDropdown.innerHTML = '<option value="">Memuat...</option>';
-
-        if (!idKelas) {
-            mapelDropdown.innerHTML = '<option value="">-- Pilih Kelas Dulu --</option>';
-            return;
-        }
-        
-        fetch('api_get_mapel.php?id_kelas=' + idKelas)
-            .then(response => response.json())
-            .then(data => {
-                mapelDropdown.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
-                data.forEach(mapel => {
-                    const option = document.createElement('option');
-                    option.value = mapel.id_mapel;
-                    option.textContent = mapel.nama_mapel;
-                    if(mapel.id_mapel == selectedMapelFromPHP) {
-                        option.selected = true;
-                    }
-                    mapelDropdown.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error fetching mapel:', error);
-                mapelDropdown.innerHTML = '<option value="">Gagal memuat data</option>';
-            });
-    }
-
-    kelasDropdown.addEventListener('change', fetchMapel);
-
-    if (kelasDropdown.value) {
-        fetchMapel();
-    }
-});
-</script>

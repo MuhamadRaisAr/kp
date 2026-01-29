@@ -61,13 +61,13 @@ if ($ujian_info['status_pengerjaan'] == 'Selesai' || $ujian_info['status_pengerj
 // Jika status 'Mengerjakan', lanjut
 
 // --- Hitung Sisa Waktu ---
-$waktu_mulai_mengerjakan_dt = new DateTime($ujian_info['waktu_mulai_mengerjakan']);
+$waktu_mulai_mengerjakan_dt = new DateTime($ujian_info['waktu_mulai_mengerjakan'], new DateTimeZone('Asia/Jakarta'));
 $waktu_mulai_mengerjakan_ts = $waktu_mulai_mengerjakan_dt->getTimestamp();
 $durasi_detik = $ujian_info['durasi_menit'] * 60;
 $waktu_akhir_pengerjaan_ts = $waktu_mulai_mengerjakan_ts + $durasi_detik;
 
 // Bandingkan juga dengan waktu selesai ujian global
-$waktu_selesai_ujian_dt = new DateTime($ujian_info['waktu_selesai']);
+$waktu_selesai_ujian_dt = new DateTime($ujian_info['waktu_selesai'], new DateTimeZone('Asia/Jakarta'));
 $waktu_selesai_ujian_ts = $waktu_selesai_ujian_dt->getTimestamp();
 
 // Waktu akhir pengerjaan siswa tidak boleh melebihi waktu selesai ujian global

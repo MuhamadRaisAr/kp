@@ -72,11 +72,15 @@
         <?php 
         // Notifikasi error
         if(isset($_GET['error'])) {
-            echo '<div class="alert alert-danger text-center py-2" role="alert">Username atau Password salah!</div>';
+            echo '<div class="alert alert-danger text-center py-2" role="alert">
+                    Username atau Password salah!
+                  </div>';
         }
         // Notifikasi logout
         if(isset($_GET['logout'])) {
-            echo '<div class="alert alert-success text-center py-2" role="alert">Anda telah berhasil logout.</div>';
+            echo '<div class="alert alert-success text-center py-2" role="alert">
+                    Anda telah berhasil logout.
+                  </div>';
         }
         // Notifikasi reset password sukses
         if(isset($_GET['status']) && $_GET['status'] == 'reset_sukses') {
@@ -109,9 +113,7 @@
                 </button>
             </div>
             
-            <div class="text-center mt-3">
-                <a href="lupa_password.php" class="text-decoration-none">Lupa Password?</a>
-            </div>
+
         </form>
     </div>
 </div>

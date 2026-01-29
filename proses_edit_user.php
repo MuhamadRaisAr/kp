@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Ambil role user dari DB
+    // Ambil data user lama dari DB untuk mengetahui role sebelumnya
     $query_user = "SELECT role FROM users WHERE id_user = ?";
     $stmt = mysqli_prepare($koneksi, $query_user);
     mysqli_stmt_bind_param($stmt, "i", $id_user);
@@ -32,20 +33,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("User tidak ditemukan.");
     }
 
-    $role = $data_user['role'];
+    $old_role = $data_user['role'];
+    $new_role = $_POST['role']; // Ambil role baru dari form
 
-    // Update data users
-    $stmt_update = mysqli_prepare($koneksi, "UPDATE users SET username = ?, email = ?, status = ? WHERE id_user = ?");
-    mysqli_stmt_bind_param($stmt_update, "sssi", $username, $email, $status, $id_user);
+    // Update data users termasuk ROLE
+    $stmt_update = mysqli_prepare($koneksi, "UPDATE users SET username = ?, email = ?, status = ?, role = ? WHERE id_user = ?");
+    mysqli_stmt_bind_param($stmt_update, "ssssi", $username, $email, $status, $new_role, $id_user);
     $update_success = mysqli_stmt_execute($stmt_update);
 
     if (!$update_success) {
         die("Gagal update user: " . mysqli_error($koneksi));
     }
 
-    // Handle penautan guru atau siswa
-    if ($role === 'guru') {
-        // Hapus tautan lama dengan prepared statement supaya aman
+    // Jika role berubah, bersihkan relasi lama
+    if ($old_role != $new_role) {
+        if ($old_role == 'guru') {
+            $stmt_clear = mysqli_prepare($koneksi, "UPDATE guru SET id_user = NULL WHERE id_user = ?");
+            mysqli_stmt_bind_param($stmt_clear, "i", $id_user);
+            mysqli_stmt_execute($stmt_clear);
+        } elseif ($old_role == 'siswa') {
+            $stmt_clear = mysqli_prepare($koneksi, "UPDATE siswa SET id_user = NULL WHERE id_user = ?");
+            mysqli_stmt_bind_param($stmt_clear, "i", $id_user);
+            mysqli_stmt_execute($stmt_clear);
+        }
+    }
+
+    // Handle penautan guru atau siswa untuk ROLE BARU
+    if ($new_role === 'guru') {
+        // Hapus tautan lama dengan prepared statement supaya aman (bersihkan jika ada duplikat)
         $stmt_clear = mysqli_prepare($koneksi, "UPDATE guru SET id_user = NULL WHERE id_user = ?");
         mysqli_stmt_bind_param($stmt_clear, "i", $id_user);
         mysqli_stmt_execute($stmt_clear);
@@ -56,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_bind_param($stmt_guru, "ii", $id_user, $id_guru);
             mysqli_stmt_execute($stmt_guru);
         }
-    } elseif ($role === 'siswa') {
+    } elseif ($new_role === 'siswa') {
         // Hapus tautan lama dengan prepared statement supaya aman
         $stmt_clear = mysqli_prepare($koneksi, "UPDATE siswa SET id_user = NULL WHERE id_user = ?");
         mysqli_stmt_bind_param($stmt_clear, "i", $id_user);
@@ -71,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Redirect sukses
-    header("Location: users.php?edit=success");
+    header("Location: users.php?status=sukses_edit");
     exit();
 } else {
     header("Location: users.php");

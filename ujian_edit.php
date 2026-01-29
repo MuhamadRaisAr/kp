@@ -41,11 +41,11 @@ $ujian_data = mysqli_fetch_assoc($result_ujian);
 // PINDAHKAN PENGECEKAN STATUS KE SINI (SEBELUM header.php)
 // ==========================================================
 // Validasi status: Hanya bisa edit jika status 'Draft'
-if ($ujian_data['status_ujian'] !== 'Draft') {
-     // Redirect SEKARANG jika status bukan Draft
-     header("Location: ujian_detail.php?id=" . $id_ujian . "&error=Tidak bisa edit, ujian sudah di-publish.");
-     exit();
-}
+// Validasi status: Dihapus agar guru bisa edit ujian yang sudah publish (untuk perpanjang waktu, dll)
+// if ($ujian_data['status_ujian'] !== 'Draft') {
+//      header("Location: ujian_detail.php?id=" . $id_ujian . "&error=Tidak bisa edit, ujian sudah di-publish.");
+//      exit();
+// }
 // ==========================================================
 
 // Jika lolos semua cek di atas, BARU panggil header.php

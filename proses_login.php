@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             mysqli_stmt_close($update_stmt);
 
             // Arahkan ke dashboard
-            header("Location: dashboard.php");
+            header("Location: dashboard.php?login=success");
             exit();
         }
     }

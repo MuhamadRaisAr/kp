@@ -111,17 +111,21 @@ $waktu_sekarang = time(); // Unix timestamp
                                         <a href='ujian_hasil.php?id=" . $row['id_ujian'] . "' class='btn btn-success btn-sm me-1' title='Lihat Hasil'><i class='fas fa-poll'></i></a>";
 
                                 // Tombol Edit (Hanya jika Draft)
-                                if ($row['status_ujian'] == 'Draft') {
-                                    echo "<a href='ujian_edit.php?id=" . $row['id_ujian'] . "' class='btn btn-warning btn-sm me-1' title='Edit Ujian'><i class='fas fa-edit'></i></a>";
+                                echo "<a href='ujian_edit.php?id=" . $row['id_ujian'] . "' class='btn btn-warning btn-sm me-1' title='Edit Ujian'><i class='fas fa-edit'></i></a>";
+
+                                // Cek apakah ujian sudah lewat / expired
+                                $waktu_selesai_ts = strtotime($row['waktu_selesai']);
+                                if ($row['status_ujian'] != 'Draft' && $waktu_sekarang > $waktu_selesai_ts) {
+                                    // Tombol Buka Kembali (Memicu Modal)
+                                    echo "<button type='button' class='btn btn-dark btn-sm me-1' title='Buka Kembali Ujian' data-bs-toggle='modal' data-bs-target='#modalBukaKembali' data-id='" . $row['id_ujian'] . "' data-judul='" . htmlspecialchars($row['judul_ujian'], ENT_QUOTES) . "'>
+                                            <i class='fas fa-lock-open'></i>
+                                          </button>";
                                 }
 
                                 // ==========================================
-                                // PERUBAHAN LOGIKA TOMBOL HAPUS
+                                // PERUBAHAN LOGIKA TOMBOL HAPUS - SELALU MUNCUL
                                 // ==========================================
-                                // Tampilkan Hapus jika 'Draft' ATAU ('Published' TAPI belum mulai)
-                                if ($row['status_ujian'] == 'Draft' || ($row['status_ujian'] == 'Published' && $waktu_sekarang < $waktu_mulai_ts)) {
-                                    echo "<a href='proses_ujian_hapus.php?id=" . $row['id_ujian'] . "' class='btn btn-danger btn-sm' title='Hapus Ujian' onclick='return confirm(\"Yakin ingin menghapus ujian ini? SEMUA SOAL di dalamnya juga akan terhapus.\");'><i class='fas fa-trash'></i></a>";
-                                }
+                                echo "<a href='proses_ujian_hapus.php?id=" . $row['id_ujian'] . "' class='btn btn-danger btn-sm' title='Hapus Ujian' onclick='return confirm(\"Yakin ingin menghapus ujian ini? SEMUA SOAL dan NILAI SISWA di dalamnya juga akan terhapus.\");'><i class='fas fa-trash'></i></a>";
                                 // ==========================================
                                 
                                 echo "</td>";
@@ -138,6 +142,53 @@ $waktu_sekarang = time(); // Unix timestamp
         </div>
     </div>
 </div>
+
+<!-- Modal Buka Kembali -->
+<div class="modal fade" id="modalBukaKembali" tabindex="-1" aria-labelledby="modalBukaKembaliLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title text-dark" id="modalBukaKembaliLabel"><i class="fas fa-history me-2"></i>Buka Kembali Ujian</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="proses_ujian_buka_kembali.php" method="POST">
+          <div class="modal-body">
+            <p>Anda akan membuka kembali ujian: <strong id="namaUjianModal"></strong></p>
+            <input type="hidden" name="id_ujian" id="idUjianModal">
+            
+            <div class="mb-3">
+                <label for="waktu_selesai_baru" class="form-label">Waktu Selesai Baru:</label>
+                <input type="datetime-local" class="form-control" name="waktu_selesai_baru" required 
+                       value="<?php echo date('Y-m-d\TH:i', strtotime('+1 hour')); ?>">
+                <small class="text-muted">Tentukan sampai kapan ujian ini dibuka kembali.</small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-dark">Simpan & Buka</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    var modalBukaKembali = document.getElementById('modalBukaKembali')
+    modalBukaKembali.addEventListener('show.bs.modal', function (event) {
+        // Tombol yang memicu modal
+        var button = event.relatedTarget
+        // Ambil data dari atribut data-*
+        var idUjian = button.getAttribute('data-id')
+        var judulUjian = button.getAttribute('data-judul')
+        
+        // Update isi modal
+        var inputId = modalBukaKembali.querySelector('#idUjianModal')
+        var labelNama = modalBukaKembali.querySelector('#namaUjianModal')
+        
+        inputId.value = idUjian
+        labelNama.textContent = judulUjian
+    })
+</script>
 
 <?php
 // Panggil file footer.php

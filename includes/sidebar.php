@@ -19,8 +19,8 @@
         // TAMPILKAN MENU BERDASARKAN ROLE PENGGUNA
         if ($user_role == 'admin') :
         ?>
-            <li><a href="Guru.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'guru.php') ? 'active' : ''; ?>"><i class="fas fa-user-graduate me-2"></i>Guru</a></li>
-            <li><a href="Siswa.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'siswa.php') ? 'active' : ''; ?>"><i class="fas fa-chalkboard-teacher me-2"></i>Siswa</a></li>
+            <li><a href="guru.php" class="nav-link text-white <?php echo (strtolower(basename($_SERVER['PHP_SELF'])) == 'guru.php') ? 'active' : ''; ?>"><i class="fas fa-user-graduate me-2"></i>Guru</a></li>
+            <li><a href="siswa.php" class="nav-link text-white <?php echo (strtolower(basename($_SERVER['PHP_SELF'])) == 'siswa.php') ? 'active' : ''; ?>"><i class="fas fa-chalkboard-teacher me-2"></i>Siswa</a></li>
             <li><a href="kelas.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'kelas.php') ? 'active' : ''; ?>"><i class="fas fa-door-open me-2"></i>Kelas</a></li>
 
             <hr>
@@ -59,7 +59,7 @@
             <div class="small text-muted px-3 mb-1">LAPORAN</div>
             <li><a href="absensi_rekap.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'absensi_rekap.php') ? 'active' : ''; ?>"><i class="fas fa-calendar-alt me-2"></i>Rekap Absensi</a></li>
             <li><a href="laporan_nilai.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'laporan_nilai.php') ? 'active' : ''; ?>"><i class="fas fa-file-alt me-2"></i>Laporan Nilai</a></li>
-            <li><a href="cetak_rapot.php" class="nav-link text-white <?php echo (basename($_SERVER['PHP_SELF']) == 'cetak_rapot.php') ? 'active' : ''; ?>"><i class="fas fa-print me-2"></i>Cetak Rapor</a></li>
+
 
         <?php
         elseif ($user_role == 'siswa') :

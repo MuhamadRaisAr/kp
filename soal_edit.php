@@ -33,11 +33,8 @@ if (mysqli_num_rows($result_soal) == 0) {
 }
 $soal_data = mysqli_fetch_assoc($result_soal);
 
-// 3. Validasi Status Ujian: Hanya bisa edit jika masih 'Draft'
-if ($soal_data['status_ujian'] !== 'Draft') {
-    header("Location: ujian_detail.php?id=" . $soal_data['id_ujian'] . "&error=Tidak bisa edit soal, ujian sudah di-publish.");
-    exit();
-}
+// 3. Validasi Status Ujian: CHECK REMOVED (Request User)
+// if ($soal_data['status_ujian'] !== 'Draft') { ... }
 $id_ujian = $soal_data['id_ujian']; // Simpan id_ujian untuk redirect
 ?>
 

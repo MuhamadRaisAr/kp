@@ -52,10 +52,8 @@ if (mysqli_num_rows($result_cek) == 0) {
     exit();
 }
 $ujian_data = mysqli_fetch_assoc($result_cek);
-if ($ujian_data['status_ujian'] !== 'Draft') {
-    header("Location: ujian_detail.php?id=" . $id_ujian . "&status=gagal_edit&msg=" . urlencode("Tidak bisa mengedit soal, ujian sudah di-publish."));
-    exit();
-}
+$ujian_data = mysqli_fetch_assoc($result_cek);
+// CHECK REMOVED: if ($ujian_data['status_ujian'] !== 'Draft') { ... }
 
 // 4. Update Soal di Database
 $query_update = "UPDATE ujian_soal 

@@ -4,21 +4,15 @@ require_once 'includes/header.php';
 require_once 'includes/koneksi.php';
 $judul_halaman = "Cetak Rapor Siswa";
 
-// Logika untuk filter, dibedakan berdasarkan role
-$id_guru_login = isset($_SESSION['id_guru']) ? $_SESSION['id_guru'] : null;
-$role = $_SESSION['role'];
+// Cek apakah user adalah admin
+if ($_SESSION['role'] !== 'admin') {
+    echo "<script>alert('Anda tidak memiliki akses ke halaman ini!'); window.location='dashboard.php';</script>";
+    exit;
+}
 
 // Ambil data untuk dropdown
 $query_tahun = "SELECT * FROM tahun_ajaran WHERE status_aktif = 'Aktif' ORDER BY tahun_ajaran DESC";
-if ($role == 'admin') {
-    $query_kelas = "SELECT id_kelas, nama_kelas FROM kelas ORDER BY nama_kelas ASC";
-} else { // Jika guru, hanya tampilkan kelas yang dia ajar atau dimana dia menjadi wali kelas
-    $query_kelas = "SELECT DISTINCT k.id_kelas, k.nama_kelas 
-                    FROM kelas k 
-                    LEFT JOIN mengajar m ON k.id_kelas = m.id_kelas
-                    WHERE m.id_guru = {$id_guru_login} OR k.id_guru_wali_kelas = {$id_guru_login}
-                    ORDER BY k.nama_kelas ASC";
-}
+$query_kelas = "SELECT id_kelas, nama_kelas FROM kelas ORDER BY nama_kelas ASC";
 $result_tahun = mysqli_query($koneksi, $query_tahun);
 $result_kelas = mysqli_query($koneksi, $query_kelas);
 

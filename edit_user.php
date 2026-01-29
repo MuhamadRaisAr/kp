@@ -97,12 +97,12 @@ $judul_halaman = "Edit User";
                 </div>
                 <div class="mb-3">
                     <label for="role" class="form-label">Role</label>
-                    <select class="form-select" id="role" name="role" required disabled>
+                    <select class="form-select" id="role" name="role" required>
                         <option value="admin" <?= $role_user == 'admin' ? 'selected' : ''; ?>>Admin</option>
                         <option value="guru" <?= $role_user == 'guru' ? 'selected' : ''; ?>>Guru</option>
                         <option value="siswa" <?= $role_user == 'siswa' ? 'selected' : ''; ?>>Siswa</option>
                     </select>
-                    <div class="form-text text-muted">Role tidak bisa diubah dari halaman ini.</div>
+                    <div class="form-text text-muted">Pastikan role sesuai dengan pengguna.</div>
                 </div>
                 <div class="mb-3">
                     <label for="status" class="form-label">Status</label>

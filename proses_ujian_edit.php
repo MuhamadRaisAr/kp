@@ -46,7 +46,7 @@ if (strtotime($waktu_selesai_str) <= strtotime($waktu_mulai_str)) {
 $query_cek = "SELECT u.id_ujian 
               FROM ujian u
               JOIN mengajar m ON u.id_mengajar = m.id_mengajar
-              WHERE u.id_ujian = ? AND m.id_guru = ? AND u.status_ujian = 'Draft'";
+              WHERE u.id_ujian = ? AND m.id_guru = ?";
 $stmt_cek = mysqli_prepare($koneksi, $query_cek);
 mysqli_stmt_bind_param($stmt_cek, "ii", $id_ujian, $id_guru_login);
 mysqli_stmt_execute($stmt_cek);
@@ -79,7 +79,7 @@ if ($stmt_update) {
         // Berhasil
         mysqli_stmt_close($stmt_update);
         mysqli_close($koneksi);
-        header("Location: ujian_detail.php?id=" . $id_ujian . "&status=sukses_edit");
+        header("Location: ujian.php?status=sukses_edit");
         exit();
     } else {
         // Gagal eksekusi query

@@ -50,16 +50,7 @@ function tentukanPredikat($nilai_akhir) {
     return 'E';
 }
 
-// Ambil filter tahun ajaran dari URL
-$selected_tahun = isset($_GET['tahun_ajaran']) ? (int)$_GET['tahun_ajaran'] : '';
 
-// Jika tidak ada filter, ambil tahun ajaran yang aktif sebagai default
-if (empty($selected_tahun)) {
-    $q_tahun_aktif = mysqli_query($koneksi, "SELECT id_tahun_ajaran FROM tahun_ajaran WHERE status_aktif = 'Aktif' LIMIT 1");
-    if ($q_tahun_aktif && mysqli_num_rows($q_tahun_aktif) > 0) {
-        $selected_tahun = mysqli_fetch_assoc($q_tahun_aktif)['id_tahun_ajaran'];
-    }
-}
 ?>
 
 <div class="container-fluid px-4">
@@ -69,105 +60,115 @@ if (empty($selected_tahun)) {
         <li class="breadcrumb-item active">Lihat Nilai</li>
     </ol>
 
-    <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-filter me-1"></i>Pilih Periode</div>
-        <div class="card-body">
-            <form method="GET" action="nilai_saya.php">
-                <div class="row">
-                    <div class="col-md-8">
-                        <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" required>
-                            <option value="">-- Pilih Tahun Ajaran & Semester --</option>
-                            <?php 
-                            $result_tahun = mysqli_query($koneksi, "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC");
-                            while($row = mysqli_fetch_assoc($result_tahun)) {
-                                $selected = ($row['id_tahun_ajaran'] == $selected_tahun) ? 'selected' : '';
-                                echo "<option value='{$row['id_tahun_ajaran']}' $selected>" . htmlspecialchars($row['tahun_ajaran']) . " - " . htmlspecialchars($row['semester']) . "</option>";
-                            } 
-                            ?>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <button type="submit" class="btn btn-primary w-100">Tampilkan Nilai</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Filter dihapus agar nilai langsung muncul -->
 
     <?php
-    // Tampilkan tabel nilai HANYA JIKA tahun ajaran sudah dipilih
-    if (!empty($selected_tahun)) :
-        // Query untuk mengambil semua nilai siswa pada semester yang dipilih
-        $query_nilai = "SELECT 
-                            mp.nama_mapel, 
-                            n.jenis_nilai, 
-                            n.nilai 
-                        FROM nilai n
-                        JOIN mengajar m ON n.id_mengajar = m.id_mengajar
-                        JOIN mata_pelajaran mp ON m.id_mapel = mp.id_mapel
-                        WHERE n.id_siswa = ? AND m.id_tahun_ajaran = ?";
-        $stmt_nilai = mysqli_prepare($koneksi, $query_nilai);
-        mysqli_stmt_bind_param($stmt_nilai, "ii", $id_siswa_login, $selected_tahun);
-        mysqli_stmt_execute($stmt_nilai);
-        $result_nilai = mysqli_stmt_get_result($stmt_nilai);
+    // Query untuk mengambil SEMUA nilai siswa (tanpa filter tahun)
+    // Diurutkan berdasarkan Tahun Ajaran (Terbaru) -> Semester -> Mapel
+    // Query untuk mengambil SEMUA nilai siswa (tanpa filter tahun)
+    // Diurutkan berdasarkan Tahun Ajaran (Terbaru) -> Semester -> Mapel
+    $query_nilai = "SELECT 
+                        ta.id_tahun_ajaran,
+                        ta.tahun_ajaran,
+                        ta.semester,
+                        mp.nama_mapel, 
+                        n.jenis_nilai, 
+                        n.nilai 
+                    FROM nilai n
+                    JOIN mengajar m ON n.id_mengajar = m.id_mengajar
+                    JOIN mata_pelajaran mp ON m.id_mapel = mp.id_mapel
+                    JOIN tahun_ajaran ta ON m.id_tahun_ajaran = ta.id_tahun_ajaran
+                    WHERE n.id_siswa = ? 
+                    ORDER BY ta.tahun_ajaran DESC, ta.semester DESC, mp.nama_mapel ASC";
+    
+    $stmt_nilai = mysqli_prepare($koneksi, $query_nilai);
+    mysqli_stmt_bind_param($stmt_nilai, "i", $id_siswa_login);
+    mysqli_stmt_execute($stmt_nilai);
+    $result_nilai = mysqli_stmt_get_result($stmt_nilai);
 
-        // Olah data nilai ke dalam format yang mudah digunakan
-        $nilai_per_mapel = [];
-        while($row = mysqli_fetch_assoc($result_nilai)) {
-            $nilai_per_mapel[$row['nama_mapel']][$row['jenis_nilai']] = $row['nilai'];
+    // Olah data nilai: Grouping berdasarkan [ID Tahun][Label/Mapel]
+    $data_nilai_group = [];
+    while($row = mysqli_fetch_assoc($result_nilai)) {
+        $id_or_key = $row['id_tahun_ajaran'];
+        $periode_label = $row['tahun_ajaran'] . ' - ' . $row['semester'];
+        
+        // Simpan label periode
+        if (!isset($data_nilai_group[$id_or_key]['label'])) {
+            $data_nilai_group[$id_or_key]['label'] = $periode_label;
         }
+
+        // Simpan data nilai
+        $data_nilai_group[$id_or_key]['mapel'][$row['nama_mapel']][$row['jenis_nilai']] = $row['nilai'];
+    }
+    
+    // Jika tidak ada data sama sekali
+    if (empty($data_nilai_group)) {
+        echo '<div class="alert alert-info">Belum ada data nilai yang tersedia.</div>';
+    }
+
+    // Loop setiap periode (Per Tahun Ajaran)
+    foreach ($data_nilai_group as $id_tahun => $data_periode) :
+        $periode_label = $data_periode['label'];
+        $mapel_list = $data_periode['mapel'];
     ?>
     <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-book-open me-1"></i>Daftar Nilai Semester Ini</div>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-calendar-alt me-1"></i> Tahun Ajaran: <strong><?php echo htmlspecialchars($periode_label); ?></strong>
+            </div>
+            <div>
+                <a href="download_nilai.php?id_siswa=<?php echo $id_siswa_login; ?>&id_tahun_ajaran=<?php echo $id_tahun; ?>" class="btn btn-light btn-sm text-primary fw-bold">
+                    <i class="fas fa-file-download me-1"></i> Download Nilai
+                </a>
+            </div>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered text-center">
-                    <thead>
+                <table class="table table-bordered text-center table-striped">
+                    <thead class="table-light">
                         <tr>
-                            <th>No</th>
+                            <th width="5%">No</th>
                             <th class="text-start">Mata Pelajaran</th>
-                            <th>Tugas</th>
-                            <th>UTS</th>
-                            <th>UAS</th>
-                            <th>Praktik</th>
-                            <th>Nilai Akhir</th>
-                            <th>Predikat</th>
+                            <th width="10%">Tugas</th>
+                            <th width="10%">UTS</th>
+                            <th width="10%">UAS</th>
+                            <th width="10%">Praktik</th>
+                            <th width="10%">Nilai Akhir</th>
+                            <th width="10%">Predikat</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php 
-                        if (count($nilai_per_mapel) > 0) {
-                            $nomor = 1;
-                            foreach ($nilai_per_mapel as $mapel => $nilai):
-                                $tugas = $nilai['Tugas'] ?? 0;
-                                $uts = $nilai['UTS'] ?? 0;
-                                $uas = $nilai['UAS'] ?? 0;
-                                $praktik = $nilai['Praktik'] ?? 0;
-                                $nilai_akhir = hitungNilaiAkhir($tugas, $uts, $uas, $praktik);
-                                $predikat = tentukanPredikat($nilai_akhir);
+                        $nomor = 1;
+                        foreach ($mapel_list as $mapel => $nilai):
+                            $tugas = $nilai['Tugas'] ?? 0;
+                            $uts = $nilai['UTS'] ?? 0;
+                            $uas = $nilai['UAS'] ?? 0;
+                            $praktik = $nilai['Praktik'] ?? 0;
+                            $nilai_akhir = hitungNilaiAkhir($tugas, $uts, $uas, $praktik);
+                            $predikat = tentukanPredikat($nilai_akhir);
                         ?>
                         <tr>
                             <td><?php echo $nomor++; ?></td>
-                            <td class="text-start"><?php echo htmlspecialchars($mapel); ?></td>
-                            <td><?php echo $tugas; ?></td>
-                            <td><?php echo $uts; ?></td>
-                            <td><?php echo $uas; ?></td>
-                            <td><?php echo $praktik; ?></td>
-                            <td><?php echo number_format($nilai_akhir, 2); ?></td>
-                            <td><strong><?php echo $predikat; ?></strong></td>
+                            <td class="text-start fw-bold"><?php echo htmlspecialchars($mapel); ?></td>
+                            <td><?php echo $tugas ?: '-'; ?></td>
+                            <td><?php echo $uts ?: '-'; ?></td>
+                            <td><?php echo $uas ?: '-'; ?></td>
+                            <td><?php echo $praktik ?: '-'; ?></td>
+                            <td class="fw-bold"><?php echo number_format($nilai_akhir, 2); ?></td>
+                            <td>
+                                <span class="badge bg-<?php echo ($predikat == 'A' || $predikat == 'B') ? 'success' : (($predikat == 'C') ? 'warning' : 'danger'); ?>">
+                                    <?php echo $predikat; ?>
+                                </span>
+                            </td>
                         </tr>
-                        <?php 
-                            endforeach;
-                        } else {
-                            echo "<tr><td colspan='8' class='text-center'>Belum ada data nilai untuk semester ini.</td></tr>";
-                        }
-                        ?>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    <?php endif; ?>
+    <?php endforeach; ?>
 </div>
 
 <?php require_once 'includes/footer.php'; ?>

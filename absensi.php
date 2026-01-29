@@ -19,7 +19,7 @@ if ($role_login !== 'guru' || !$id_guru_login) {
 $selected_tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : date('Y-m-d');
 $selected_tahun = isset($_GET['tahun_ajaran']) ? (int)$_GET['tahun_ajaran'] : '';
 $selected_kelas = isset($_GET['kelas']) ? (int)$_GET['kelas'] : '';
-$selected_mapel = isset($_GET['mapel']) ? (int)$_GET['mapel'] : '';
+// $selected_mapel tidak diperlukan lagi
 
 // Jika tahun ajaran belum dipilih, coba ambil yang aktif sebagai default
 if (empty($selected_tahun)) {
@@ -70,10 +70,10 @@ if (empty($selected_tahun)) {
                             ?>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="kelas" class="form-label">Kelas</label>
-                        <select name="kelas" id="kelas" class="form-select" required onchange="this.form.submit()">
-                             <option value="">-- Pilih Tahun Dulu --</option>
+                        <select name="kelas" id="kelas" class="form-select" required>
+                             <option value="">-- Pilih Kelas --</option>
                             <?php 
                             // PERBAIKAN: Query kelas sekarang bergantung pada $selected_tahun
                             if ($selected_tahun) {
@@ -91,43 +91,26 @@ if (empty($selected_tahun)) {
                             ?>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <label for="mapel" class="form-label">Mata Pelajaran</label>
-                        <select name="mapel" id="mapel" class="form-select" required>
-                           <option value="">-- Pilih Kelas Dulu --</option>
-                           <?php 
-                            // PERBAIKAN: Query mapel sekarang bergantung pada $selected_tahun DAN $selected_kelas
-                            if($selected_kelas && $selected_tahun) {
-                                $query_mapel = "SELECT DISTINCT mp.id_mapel, mp.nama_mapel 
-                                                FROM mata_pelajaran mp 
-                                                JOIN mengajar m ON mp.id_mapel = m.id_mapel 
-                                                WHERE m.id_guru = {$id_guru_login} 
-                                                  AND m.id_kelas = {$selected_kelas}
-                                                  AND m.id_tahun_ajaran = {$selected_tahun}";
-                                $result_mapel = mysqli_query($koneksi, $query_mapel);
-                                while($row = mysqli_fetch_assoc($result_mapel)) {
-                                    $selected = ($row['id_mapel'] == $selected_mapel) ? 'selected' : '';
-                                    echo "<option value='{$row['id_mapel']}' $selected>" . htmlspecialchars($row['nama_mapel']) . "</option>";
-                                }
-                            }
-                            ?>
-                        </select>
+                    
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" name="tampilkan" value="1" class="btn btn-primary w-100">Tampilkan Siswa</button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary mt-3">Tampilkan Siswa</button>
             </form>
         </div>
     </div>
 
     <?php
-    // Tampilkan tabel absensi jika filter sudah lengkap
-    if (!empty($selected_tanggal) && !empty($selected_kelas) && !empty($selected_mapel) && !empty($selected_tahun)) :
+    // Tampilkan tabel absensi jika filter sudah lengkap DAN tombol tampilkan diklik
+    if (!empty($selected_tanggal) && !empty($selected_kelas) && !empty($selected_tahun) && isset($_GET['tampilkan'])) :
         
+        // Ambil ID Mengajar (Ambil salah satu saja, karena absensi harian ini diasumsikan per kelas)
+        // Kita ambil LIMIT 1 mapel apa saja yang diajar guru ini di kelas tsb.
         $q_mengajar = "SELECT id_mengajar FROM mengajar 
                        WHERE id_guru = {$id_guru_login} 
                          AND id_kelas = {$selected_kelas} 
-                         AND id_mapel = {$selected_mapel} 
-                         AND id_tahun_ajaran = {$selected_tahun}";
+                         AND id_tahun_ajaran = {$selected_tahun}
+                       LIMIT 1";
         $res_mengajar = mysqli_query($koneksi, $q_mengajar);
         
         if(mysqli_num_rows($res_mengajar) > 0) {
@@ -139,6 +122,10 @@ if (empty($selected_tahun)) {
             
             $absensi_existing = [];
             // Gunakan prepared statement untuk keamanan
+            // Karena kita menggunakan id_mengajar (yang terikat ke mapel tertentu), absensi ini akan tercatat di mapel tersebut.
+            // Namun karena user minta hilangkan mapel, asumsinya satu hari satu absensi (atau mapel pertama mewakili).
+            
+            // Perlu diperhatikan: Jika nanti di rekap menggunakan "IN (list id_mengajar)", maka data ini tetap aman.
             $q_absensi = "SELECT id_siswa, status FROM absensi WHERE id_mengajar = ? AND tanggal = ?";
             $stmt_absensi = mysqli_prepare($koneksi, $q_absensi);
             mysqli_stmt_bind_param($stmt_absensi, "is", $id_mengajar, $selected_tanggal);
@@ -157,7 +144,6 @@ if (empty($selected_tahun)) {
                 <input type="hidden" name="tanggal" value="<?php echo $selected_tanggal; ?>">
                 
                 <input type="hidden" name="filter_kelas" value="<?php echo $selected_kelas; ?>">
-                <input type="hidden" name="filter_mapel" value="<?php echo $selected_mapel; ?>">
                 <input type="hidden" name="filter_tahun_ajaran" value="<?php echo $selected_tahun; ?>">
 
                 <table class="table table-hover">
@@ -206,7 +192,7 @@ if (empty($selected_tahun)) {
         </div>
     </div>
     <?php } else {
-            echo '<div class="alert alert-warning">Tidak ada jadwal mengajar yang cocok dengan kriteria yang dipilih. Pastikan Anda sudah ditugaskan mengajar mapel ini di kelas dan tahun ajaran tersebut.</div>';
+            echo '<div class="alert alert-warning">Tidak ada jadwal mengajar yang cocok dengan kriteria yang dipilih. Pastikan Anda sudah ditugaskan mengajar di kelas dan tahun ajaran tersebut.</div>';
         }
     endif; ?>
 </div>

@@ -29,7 +29,7 @@ $waktu_sekarang_sql = $waktu_sekarang_dt->format('Y-m-d H:i:s');
 $query_ujian = "SELECT 
                     u.id_ujian, u.judul_ujian, u.durasi_menit, u.waktu_mulai, u.waktu_selesai,
                     mp.nama_mapel, 
-                    g.nama_guru,
+                    g.nama_lengkap AS nama_guru,
                     m.id_kelas,
                     uh.status_pengerjaan
                 FROM ujian u
@@ -55,8 +55,8 @@ $ujian_data = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
 // 3. Validasi Waktu Ujian & Status Pengerjaan
-$waktu_mulai_ujian_dt = new DateTime($ujian_data['waktu_mulai']);
-$waktu_selesai_ujian_dt = new DateTime($ujian_data['waktu_selesai']);
+$waktu_mulai_ujian_dt = new DateTime($ujian_data['waktu_mulai'], new DateTimeZone('Asia/Jakarta'));
+$waktu_selesai_ujian_dt = new DateTime($ujian_data['waktu_selesai'], new DateTimeZone('Asia/Jakarta'));
 $status_pengerjaan = $ujian_data['status_pengerjaan'] ?? 'Belum';
 
 if ($waktu_sekarang_dt < $waktu_mulai_ujian_dt) {

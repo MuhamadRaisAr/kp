@@ -80,25 +80,72 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     <strong>Status:</strong> 
                     <?php
                     $status = $ujian_data['status_ujian'];
+                    $waktu_sekarang = time();
+                    $waktu_selesai_ts = strtotime($ujian_data['waktu_selesai']);
+                    $is_expired = ($waktu_sekarang > $waktu_selesai_ts);
+
                     if ($status == 'Draft') {
                         echo '<span class="badge bg-secondary fs-6">Draft</span>';
                     } elseif ($status == 'Published') {
-                        echo '<span class="badge bg-success fs-6">Published</span>';
+                        if ($is_expired) {
+                             echo '<span class="badge bg-danger fs-6">Berakhir / Terlewat</span>';
+                        } else {
+                             echo '<span class="badge bg-success fs-6">Published (Aktif)</span>';
+                        }
                     } elseif ($status == 'Selesai') {
                         echo '<span class="badge bg-dark fs-6">Selesai</span>';
                     }
                     ?>
                     
-                    <?php if ($status == 'Draft'): ?>
-                    <form action="proses_ujian_publish.php" method="POST" class="mt-3" onsubmit="return confirm('Anda yakin ingin mem-publish ujian ini? Setelah di-publish, soal tidak bisa diubah lagi.');">
-                        <input type="hidden" name="id_ujian" value="<?php echo $id_ujian; ?>">
-                        <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane me-2"></i>Publish Ujian</button>
-                    </form>
-                    <?php endif; ?>
+                    <div class="mt-3">
+                        <a href="ujian_edit.php?id=<?php echo $id_ujian; ?>" class="btn btn-warning btn-sm"><i class="fas fa-edit me-1"></i> Edit Pengaturan</a>
+                        
+                        <?php if ($status == 'Draft'): ?>
+                        <form action="proses_ujian_publish.php" method="POST" class="d-inline" onsubmit="return confirm('Anda yakin ingin mem-publish ujian ini? Setelah di-publish, soal tidak bisa diubah lagi.');">
+                            <input type="hidden" name="id_ujian" value="<?php echo $id_ujian; ?>">
+                            <button type="submit" class="btn btn-success btn-sm ms-1"><i class="fas fa-paper-plane me-2"></i>Publish</button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- FITUR BUKA KEMBALI UJIAN (Khusus Published/Selesai/Expired) -->
+    <?php if ($status != 'Draft'): ?> 
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark"><i class="fas fa-history me-1"></i> Perpanjang Waktu / Buka Kembali Ujian</div>
+        <div class="card-body">
+            <p class="mb-2">Gunakan fitur ini jika batas waktu ujian sudah lewat dan Anda ingin membukanya kembali untuk siswa.</p>
+            <form action="proses_ujian_buka_kembali.php" method="POST" class="row g-3 align-items-end">
+                <input type="hidden" name="id_ujian" value="<?php echo $id_ujian; ?>">
+                
+                <div class="col-md-5">
+                    <label class="form-label">Set Waktu Selesai Baru:</label>
+                    <input type="datetime-local" class="form-control" name="waktu_selesai_baru" required>
+                </div>
+                <!-- Atau bisa tambahkan opsi instan -->
+                <!-- 
+                <div class="col-md-3">
+                    <label class="form-label">Atau Tambah Durasi:</label>
+                    <select class="form-select" name="tambah_menit">
+                        <option value="0">-- Pilih --</option>
+                        <option value="60">+ 1 Jam dari Sekarang</option>
+                        <option value="120">+ 2 Jam dari Sekarang</option>
+                        <option value="1440">+ 24 Jam dari Sekarang</option>
+                    </select>
+                </div> 
+                -->
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-dark" onclick="return confirm('Apakah Anda yakin ingin memperbarui waktu selesai ujian ini? Siswa akan dapat mengakses ujian kembali.');">
+                        <i class="fas fa-unlock-alt me-1"></i> Simpan & Buka
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php
     // ==========================================================
@@ -193,13 +240,11 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     }
                     echo "</ul>";
                     
-                    // Tombol Aksi (Edit/Hapus) hanya jika masih Draft
-                    if ($ujian_data['status_ujian'] == 'Draft') {
-                        echo "<div class='mt-2'>
-                                <a href='soal_edit.php?id_soal=" . $soal['id_soal'] . "' class='btn btn-warning btn-sm'><i class='fas fa-edit'></i> Edit</a>
-                                <a href='soal_hapus.php?id_soal=" . $soal['id_soal'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"Yakin ingin menghapus soal ini?\");'><i class='fas fa-trash'></i> Hapus</a>
-                              </div>";
-                    }
+                    // Tombol Aksi (Edit/Hapus) SELALU MUNCUL (Request User)
+                    echo "<div class='mt-2'>
+                            <a href='soal_edit.php?id_soal=" . $soal['id_soal'] . "' class='btn btn-warning btn-sm'><i class='fas fa-edit'></i> Edit</a>
+                            <a href='soal_hapus.php?id_soal=" . $soal['id_soal'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"Yakin ingin menghapus soal ini?\");'><i class='fas fa-trash'></i> Hapus</a>
+                          </div>";
                     
                     echo "</div>";
                 }

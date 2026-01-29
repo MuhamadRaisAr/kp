@@ -1,5 +1,5 @@
 <?php
-// Mulai output buffering di baris paling pertama, sebelum apapun.
+// Mulai output buffering
 ob_start();
 
 // Panggil file-file yang dibutuhkan
@@ -17,7 +17,7 @@ $id_tahun_ajaran = (int)$_GET['id_tahun_ajaran'];
 // Cek Keamanan: Jika user adalah siswa, pastikan dia hanya melihat datanya sendiri
 if (isset($_SESSION['role']) && strtolower($_SESSION['role']) == 'siswa') {
     if ($id_siswa !== (int)$_SESSION['id_siswa']) {
-        die("Akses ditolak. Anda hanya diperbolehkan mencetak rapor anda sendiri.");
+        die("Akses ditolak. Anda hanya diperbolehkan mendownload nilai anda sendiri.");
     }
 }
 
@@ -43,11 +43,10 @@ function tentukanPredikat($nilai_akhir) {
 // MENGAMBIL SEMUA DATA DARI DATABASE
 // =================================================================
 
-// 1. Ambil Data Siswa, Kelas, dan Wali Kelas
-$query_siswa = "SELECT s.*, k.nama_kelas, g.nama_lengkap AS nama_wali 
+// 1. Ambil Data Siswa & Kelas
+$query_siswa = "SELECT s.nama_lengkap, s.nis, s.nisn, k.nama_kelas
                 FROM siswa s 
                 JOIN kelas k ON s.id_kelas = k.id_kelas 
-                JOIN guru g ON k.id_guru_wali_kelas = g.id_guru
                 WHERE s.id_siswa = ?";
 $stmt_siswa = mysqli_prepare($koneksi, $query_siswa);
 mysqli_stmt_bind_param($stmt_siswa, "i", $id_siswa);
@@ -61,13 +60,13 @@ mysqli_stmt_bind_param($stmt_tahun, "i", $id_tahun_ajaran);
 mysqli_stmt_execute($stmt_tahun);
 $data_tahun = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_tahun));
 
-// PENGECEKAN PENTING: Hentikan jika data siswa atau tahun ajaran tidak ada
+// Hentikan jika data tidak ditemukan
 if (!$data_siswa || !$data_tahun) {
-    ob_end_clean(); // Hapus buffer sebelum menampilkan error
-    die("Data siswa atau tahun ajaran tidak ditemukan.");
+    ob_end_clean();
+    die("Data tidak ditemukan.");
 }
 
-// 3. Ambil Semua Data Nilai Siswa di semester tersebut
+// 3. Ambil Nilai
 // PERBAIKAN: Hanya ambil nilai dari Mapel yang diajarkan DI KELAS SISWA TERSEBUT
 $query_nilai = "SELECT mp.nama_mapel, n.jenis_nilai, n.nilai 
                 FROM nilai n
@@ -89,7 +88,7 @@ while($row = mysqli_fetch_assoc($result_nilai)) {
 }
 
 // =================================================================
-// MULAI MEMBUAT DOKUMEN PDF
+// MEMBUAT PDF
 // =================================================================
 $pdf = new FPDF('P', 'mm', 'A4');
 $pdf->AddPage();
@@ -121,37 +120,45 @@ $pdf->Line(10, 37, 200, 37); // Garis tipis tambahan (Double Line Styles)
 $pdf->Ln(8);
 
 // --- JUDUL DOKUMEN ---
-$pdf->SetFont('Times', 'B', 16);
-$pdf->Cell(0, 7, 'LAPORAN HASIL BELAJAR SISWA', 0, 1, 'C');
+$pdf->SetFont('Times', 'B', 14);
+$pdf->Cell(0, 7, 'DAFTAR NILAI HASIL BELAJAR', 0, 1, 'C');
 
 $pdf->SetFont('Times', '', 12);
-$pdf->Cell(0, 7, 'Tahun Ajaran ' . $data_tahun['tahun_ajaran'] . ' - Semester ' . $data_tahun['semester'], 0, 1, 'C');
-$pdf->Ln(10);
+$pdf->Cell(0, 6, 'Tahun Ajaran ' . $data_tahun['tahun_ajaran'] . ' - Semester ' . $data_tahun['semester'], 0, 1, 'C');
+$pdf->Ln(5);
 
-// --- INFORMASI SISWA ---
-$pdf->SetFont('Times', '', 12);
-$pdf->Cell(30, 7, 'Nama Siswa', 0, 0);
+// Info Siswa
+$pdf->SetFont('Arial', '', 11);
+$pdf->Cell(35, 7, 'Nama Siswa', 0, 0);
 $pdf->Cell(5, 7, ':', 0, 0);
-$pdf->Cell(0, 7, $data_siswa['nama_lengkap'], 0, 1);
-$pdf->Cell(30, 7, 'NIS / NISN', 0, 0);
-$pdf->Cell(5, 7, ':', 0, 0);
-$pdf->Cell(0, 7, $data_siswa['nis'] . ' / ' . $data_siswa['nisn'], 0, 1);
-$pdf->Cell(30, 7, 'Kelas', 0, 0);
-$pdf->Cell(5, 7, ':', 0, 0);
-$pdf->Cell(0, 7, $data_siswa['nama_kelas'], 0, 1);
-$pdf->Ln(7);
+$pdf->Cell(100, 7, $data_siswa['nama_lengkap'], 0, 1);
 
-// --- TABEL NILAI ---
-$pdf->SetFont('Times', 'B', 11);
-$pdf->SetFillColor(230, 230, 230);
-$pdf->Cell(10, 12, 'No', 1, 0, 'C', true);
-$pdf->Cell(70, 12, 'Mata Pelajaran', 1, 0, 'C', true);
-$pdf->Cell(20, 12, 'Nilai Akhir', 1, 0, 'C', true);
-$pdf->Cell(20, 12, 'Predikat', 1, 0, 'C', true);
-$pdf->Cell(60, 12, 'Keterangan', 1, 1, 'C', true);
+$pdf->Cell(35, 7, 'NIS / NISN', 0, 0);
+$pdf->Cell(5, 7, ':', 0, 0);
+$pdf->Cell(100, 7, $data_siswa['nis'] . ' / ' . $data_siswa['nisn'], 0, 1);
 
-$pdf->SetFont('Times', '', 11);
+$pdf->Cell(35, 7, 'Kelas', 0, 0);
+$pdf->Cell(5, 7, ':', 0, 0);
+$pdf->Cell(100, 7, $data_siswa['nama_kelas'], 0, 1);
+$pdf->Ln(5);
+
+// Tabel Nilai
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetFillColor(240, 240, 240);
+
+// Header Tabel
+$pdf->Cell(10, 10, 'No', 1, 0, 'C', true);
+$pdf->Cell(80, 10, 'Mata Pelajaran', 1, 0, 'C', true);
+$pdf->Cell(15, 10, 'Tugas', 1, 0, 'C', true);
+$pdf->Cell(15, 10, 'UTS', 1, 0, 'C', true);
+$pdf->Cell(15, 10, 'UAS', 1, 0, 'C', true);
+$pdf->Cell(15, 10, 'Praktik', 1, 0, 'C', true);
+$pdf->Cell(20, 10, 'Akhir', 1, 0, 'C', true);
+$pdf->Cell(20, 10, 'Predikat', 1, 1, 'C', true);
+
+$pdf->SetFont('Arial', '', 10);
 $nomor = 1;
+
 if (count($nilai_per_mapel) > 0) {
     foreach ($nilai_per_mapel as $mapel => $nilai) {
         $tugas = $nilai['Tugas'] ?? 0;
@@ -161,34 +168,25 @@ if (count($nilai_per_mapel) > 0) {
         $nilai_akhir = hitungNilaiAkhir($tugas, $uts, $uas, $praktik);
         $predikat = tentukanPredikat($nilai_akhir);
         
-        $pdf->Cell(10, 7, $nomor++, 1, 0, 'C');
-        $pdf->Cell(70, 7, $mapel, 1, 0, 'L');
-        $pdf->Cell(20, 7, number_format($nilai_akhir, 2), 1, 0, 'C');
-        $pdf->Cell(20, 7, $predikat, 1, 0, 'C');
-        $pdf->Cell(60, 7, '', 1, 1, 'L');
+        $pdf->Cell(10, 8, $nomor++, 1, 0, 'C');
+        $pdf->Cell(80, 8, $mapel, 1, 0, 'L');
+        $pdf->Cell(15, 8, ($tugas > 0 ? $tugas : '-'), 1, 0, 'C');
+        $pdf->Cell(15, 8, ($uts > 0 ? $uts : '-'), 1, 0, 'C');
+        $pdf->Cell(15, 8, ($uas > 0 ? $uas : '-'), 1, 0, 'C');
+        $pdf->Cell(15, 8, ($praktik > 0 ? $praktik : '-'), 1, 0, 'C');
+        $pdf->Cell(20, 8, number_format($nilai_akhir, 2), 1, 0, 'C');
+        $pdf->Cell(20, 8, $predikat, 1, 1, 'C');
     }
 } else {
-    $pdf->Cell(180, 10, 'Belum ada data nilai untuk semester ini.', 1, 1, 'C');
+    $pdf->Cell(190, 10, 'Belum ada data nilai.', 1, 1, 'C');
 }
-$pdf->Ln(15);
 
-// --- TANDA TANGAN ---
-$pdf->Cell(95, 7, 'Mengetahui,', 0, 0, 'C');
-$pdf->Cell(95, 7, 'Wali Kelas,', 0, 1, 'C');
-$pdf->Cell(95, 7, 'Orang Tua/Wali', 0, 0, 'C');
-$pdf->Ln(20);
+$pdf->Ln(10);
+$pdf->SetFont('Arial', 'I', 8);
+$pdf->Cell(0, 5, 'Dicetak pada: ' . date('d-m-Y H:i:s'), 0, 1, 'R');
 
-$pdf->SetFont('Times', 'U', 12);
-$pdf->Cell(95, 7, '(.........................)', 0, 0, 'C');
-$pdf->Cell(95, 7, $data_siswa['nama_wali'], 0, 1, 'C');
-$pdf->SetFont('Times', '', 12);
-$pdf->Cell(95, 7, '', 0, 0, 'C');
-$pdf->Cell(95, 7, 'NIP: .........................', 0, 1, 'C');
-
-// =================================================================
-// KIRIM HASIL PDF KE BROWSER
-// =================================================================
-ob_end_clean(); // Hapus semua output lain yang mungkin sudah ada
-$pdf->Output('I', 'Rapor_' . $data_siswa['nama_lengkap'] . '.pdf');
-exit; // Hentikan skrip setelah PDF dikirim
+// Output PDF (D = Download)
+ob_end_clean();
+$filename = 'Nilai_' . str_replace(' ', '_', $data_siswa['nama_lengkap']) . '_' . $data_tahun['semester'] . '.pdf';
+$pdf->Output('D', $filename);
 ?>

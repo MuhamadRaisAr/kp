@@ -53,8 +53,8 @@ $ujian_data = mysqli_fetch_assoc($result_val);
 mysqli_stmt_close($stmt_val);
 
 // Validasi waktu lagi
-$waktu_mulai_ujian_dt = new DateTime($ujian_data['waktu_mulai']);
-$waktu_selesai_ujian_dt = new DateTime($ujian_data['waktu_selesai']);
+$waktu_mulai_ujian_dt = new DateTime($ujian_data['waktu_mulai'], new DateTimeZone('Asia/Jakarta'));
+$waktu_selesai_ujian_dt = new DateTime($ujian_data['waktu_selesai'], new DateTimeZone('Asia/Jakarta'));
 
 if ($waktu_sekarang_dt < $waktu_mulai_ujian_dt) {
     header("Location: ujian_saya.php?error=Ujian belum dimulai.");

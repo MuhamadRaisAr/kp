@@ -93,23 +93,35 @@ $selected_mapel = isset($_GET['mapel']) ? (int)$_GET['mapel'] : '';
     // BAGIAN INI YANG SEBELUMNYA HILANG / TIDAK LENGKAP
     // =================================================================
     if (!empty($selected_tahun) && !empty($selected_kelas) && !empty($selected_mapel)) :
-        // Dapatkan id_mengajar berdasarkan filter
-        $q_mengajar = "SELECT id_mengajar FROM mengajar WHERE id_kelas={$selected_kelas} AND id_mapel={$selected_mapel} AND id_tahun_ajaran={$selected_tahun}";
-        $res_mengajar = mysqli_query($koneksi, $q_mengajar);
+        // Dapatkan data NILAI dengan men-JOIN tabel mengajar
+        // Ini lebih aman daripada mengambil satu id_mengajar saja, 
+        // jaga-jaga jika ada duplikasi data di tabel mengajar.
+        // Dapatkan data NILAI
+        // PERBAIKAN: Jangan filter berdasarkan m.id_kelas secara kaku.
+        // Cukup filter berdasarkan id_mapel, id_tahun_ajaran, dan PASTIKAN siswanya ada di kelas yang dipilih.
+        $q_nilai = "SELECT n.id_siswa, n.jenis_nilai, n.nilai 
+                    FROM nilai n
+                    JOIN mengajar m ON n.id_mengajar = m.id_mengajar
+                    WHERE m.id_mapel = {$selected_mapel} 
+                      AND m.id_tahun_ajaran = {$selected_tahun}
+                      AND n.id_siswa IN (SELECT id_siswa FROM siswa WHERE id_kelas = {$selected_kelas})";
         
-        if(mysqli_num_rows($res_mengajar) > 0) {
-            $id_mengajar = mysqli_fetch_assoc($res_mengajar)['id_mengajar'];
+        $res_nilai = mysqli_query($koneksi, $q_nilai);
+        
+        // Cek jika ada hasil
+        // Kita tidak perlu mengecek id_mengajar secara eksplisit sekarang,
+        // cukup cek apakah ada nilai atau siswanya ada.
+        
+        // Ambil Data Siswa
+        $q_siswa = "SELECT id_siswa, nama_lengkap FROM siswa WHERE id_kelas = {$selected_kelas} ORDER BY nama_lengkap ASC";
+        $res_siswa = mysqli_query($koneksi, $q_siswa);
 
-            // Dapatkan daftar siswa & nilai yang sudah ada
-            $q_siswa = "SELECT id_siswa, nama_lengkap FROM siswa WHERE id_kelas = {$selected_kelas} ORDER BY nama_lengkap ASC";
-            $res_siswa = mysqli_query($koneksi, $q_siswa);
-
-            $nilai_siswa = [];
-            $q_nilai = "SELECT id_siswa, jenis_nilai, nilai FROM nilai WHERE id_mengajar = {$id_mengajar}";
-            $res_nilai = mysqli_query($koneksi, $q_nilai);
+        $nilai_siswa = [];
+        if ($res_nilai) {
             while($row = mysqli_fetch_assoc($res_nilai)) {
                 $nilai_siswa[$row['id_siswa']][$row['jenis_nilai']] = $row['nilai'];
             }
+        }
         ?>
     <!-- TABEL LAPORAN NILAI -->
     <div class="card mb-4">
@@ -165,10 +177,9 @@ $selected_mapel = isset($_GET['mapel']) ? (int)$_GET['mapel'] : '';
             </div>
         </div>
     </div>
-    <?php } else {
-            echo '<div class="alert alert-warning">Tidak ada jadwal mengajar yang cocok dengan kriteria yang dipilih.</div>';
-        }
+    <?php 
     endif; 
+    ?> 
     ?>
 </div>
 

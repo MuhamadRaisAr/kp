@@ -94,8 +94,8 @@ if (!$id_kelas_siswa) {
                         if (mysqli_num_rows($result) > 0) {
                             $nomor = 1;
                             while ($row = mysqli_fetch_assoc($result)) {
-                                $waktu_mulai_ujian_dt = new DateTime($row['waktu_mulai']);
-                                $waktu_selesai_ujian_dt = new DateTime($row['waktu_selesai']);
+                                $waktu_mulai_ujian_dt = new DateTime($row['waktu_mulai'], new DateTimeZone('Asia/Jakarta'));
+                                $waktu_selesai_ujian_dt = new DateTime($row['waktu_selesai'], new DateTimeZone('Asia/Jakarta'));
 
                                 $status_pengerjaan = $row['status_pengerjaan'] ?? 'Belum'; // Default jika NULL
                                 $status_ujian = '';
