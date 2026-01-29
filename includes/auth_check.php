@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // 1. Cek apakah user sudah login atau belum
 if (!isset($_SESSION['id_user'])) {
     // Jika belum login, tendang ke halaman login
-    header("Location: login.php");
+    header("Location: /sistem-penilaian/login.php");
     exit();
 }
 

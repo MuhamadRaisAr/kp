@@ -34,7 +34,7 @@ if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $base_url; ?>assets/css/style.css" rel="stylesheet">
 
     <style>
         /* CSS untuk foto profil di navbar */
@@ -74,7 +74,8 @@ if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
     <?php 
     // Hanya tampilkan sidebar jika sudah login
     if ($is_logged_in) {
-        require_once 'includes/sidebar.php'; 
+        // Gunakan __DIR__ agar bisa dipanggil dari folder manapun tanpa error path
+        require_once __DIR__ . '/sidebar.php'; 
     }
     ?>
     
