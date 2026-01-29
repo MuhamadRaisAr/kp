@@ -25,6 +25,12 @@ if (isset($_GET['id'])) {
     mysqli_stmt_execute($stmt_guru);
     mysqli_stmt_close($stmt_guru);
 
+    // CRITICAL FIX: Lepaskan juga tautan dari tabel SISWA
+    $stmt_siswa = mysqli_prepare($koneksi, "UPDATE siswa SET id_user = NULL WHERE id_user = ?");
+    mysqli_stmt_bind_param($stmt_siswa, "i", $id_user_hapus);
+    mysqli_stmt_execute($stmt_siswa);
+    mysqli_stmt_close($stmt_siswa);
+
     // 2. Lanjutkan proses hapus dari tabel users
     $stmt_user = mysqli_prepare($koneksi, "DELETE FROM users WHERE id_user = ?");
     mysqli_stmt_bind_param($stmt_user, "i", $id_user_hapus);

@@ -93,88 +93,110 @@ while ($row = mysqli_fetch_assoc($result)) {
         $rekap_periode = $group['rekap'];
     ?>
     
-    <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            <i class="fas fa-calendar-alt me-1"></i> Periode: <strong><?php echo htmlspecialchars($periode_label); ?></strong>
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="fas fa-calendar-alt me-2"></i> 
+            <span class="fw-bold">Periode: <?php echo htmlspecialchars($periode_label); ?></span>
         </div>
         <div class="card-body">
             
             <!-- Mini Dashboard Rekap Per Semester -->
-            <div class="row mb-3">
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card bg-success text-white h-100">
-                        <div class="card-body py-2 px-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div><small>Hadir</small><div class="h5 mb-0 fw-bold"><?php echo $rekap_periode['Hadir']; ?></div></div>
-                                <i class="fas fa-check-circle fa-lg opacity-50"></i>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="card bg-success text-white h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <small class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem;">Hadir</small>
+                                <div class="fs-4 fw-bold"><?php echo $rekap_periode['Hadir']; ?></div>
                             </div>
+                            <i class="fas fa-check-circle fa-2x opacity-25"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card bg-warning text-white h-100">
-                        <div class="card-body py-2 px-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div><small>Sakit</small><div class="h5 mb-0 fw-bold"><?php echo $rekap_periode['Sakit']; ?></div></div>
-                                <i class="fas fa-notes-medical fa-lg opacity-50"></i>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-warning text-dark h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <small class="text-dark-50 text-uppercase fw-bold" style="font-size: 0.75rem;">Sakit</small>
+                                <div class="fs-4 fw-bold"><?php echo $rekap_periode['Sakit']; ?></div>
                             </div>
+                            <i class="fas fa-notes-medical fa-2x opacity-25"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card bg-info text-white h-100">
-                        <div class="card-body py-2 px-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div><small>Izin</small><div class="h5 mb-0 fw-bold"><?php echo $rekap_periode['Izin']; ?></div></div>
-                                <i class="fas fa-envelope-open-text fa-lg opacity-50"></i>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-info text-white h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <small class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem;">Izin</small>
+                                <div class="fs-4 fw-bold"><?php echo $rekap_periode['Izin']; ?></div>
                             </div>
+                            <i class="fas fa-envelope-open-text fa-2x opacity-25"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-6 mb-2">
-                    <div class="card bg-danger text-white h-100">
-                        <div class="card-body py-2 px-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div><small>Alpha</small><div class="h5 mb-0 fw-bold"><?php echo $rekap_periode['Alpha']; ?></div></div>
-                                <i class="fas fa-times-circle fa-lg opacity-50"></i>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-danger text-white h-100 border-0 shadow-sm">
+                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                            <div>
+                                <small class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem;">Alpha</small>
+                                <div class="fs-4 fw-bold"><?php echo $rekap_periode['Alpha']; ?></div>
                             </div>
+                            <i class="fas fa-times-circle fa-2x opacity-25"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Tabel Detail Absensi -->
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm">
+            <div class="table-responsive rounded border">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr>
-                            <th width="5%">No</th>
-                            <th width="15%">Tanggal</th>
-                            <th>Mata Pelajaran</th>
-                            <th width="10%">Status</th>
-                            <th>Keterangan</th>
+                        <tr class="text-uppercase small">
+                            <th width="5%" class="text-center">No</th>
+                            <th width="15%"><i class="fas fa-calendar-day me-1"></i> Tanggal</th>
+                            <th><i class="fas fa-book me-1"></i> Mata Pelajaran</th>
+                            <th width="12%" class="text-center"><i class="fas fa-info-circle me-1"></i> Status</th>
+                            <th><i class="fas fa-comment-alt me-1"></i> Keterangan</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         $nomor = 1;
                         foreach ($rows as $row_detail) {
-                            $status_class = '';
-                            $status_display = $row_detail['status'];
+                            $status_badge = '';
+                            $status_text = $row_detail['status'];
+                            
+                            // Tentukan warna badge
                             switch ($row_detail['status']) {
-                                case 'Sakit': $status_class = 'table-warning'; break;
-                                case 'Izin': $status_class = 'table-info'; break;
+                                case 'Hadir': 
+                                    $status_badge = 'bg-success'; 
+                                    break;
+                                case 'Sakit': 
+                                    $status_badge = 'bg-warning text-dark'; 
+                                    break;
+                                case 'Izin': 
+                                    $status_badge = 'bg-info text-dark'; 
+                                    break;
                                 case 'Alfa': 
-                                case 'Alpha': $status_class = 'table-danger'; $status_display = 'Alpha'; break;
-                                case 'Hadir': $status_class = 'table-success'; break;
+                                case 'Alpha': 
+                                    $status_badge = 'bg-danger'; 
+                                    $status_text = 'Alpha'; 
+                                    break;
+                                default:
+                                    $status_badge = 'bg-secondary';
                             }
                             ?>
                             <tr>
-                                <td><?php echo $nomor++; ?></td>
-                                <td><?php echo date('d M Y', strtotime($row_detail['tanggal'])); ?></td>
+                                <td class="text-center"><?php echo $nomor++; ?></td>
+                                <td class="fw-bold"><?php echo date('d M Y', strtotime($row_detail['tanggal'])); ?></td>
                                 <td><?php echo htmlspecialchars($row_detail['nama_mapel']); ?></td>
-                                <td class="<?php echo $status_class; ?> text-center fw-bold"><?php echo htmlspecialchars($status_display); ?></td>
-                                <td><?php echo htmlspecialchars($row_detail['keterangan'] ?: '-'); ?></td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill <?php echo $status_badge; ?> px-3 py-2">
+                                        <?php echo htmlspecialchars($status_text); ?>
+                                    </span>
+                                </td>
+                                <td class="text-muted small"><?php echo htmlspecialchars($row_detail['keterangan'] ?: '-'); ?></td>
                             </tr>
                             <?php
                         }

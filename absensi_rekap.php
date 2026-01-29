@@ -24,37 +24,39 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
 ?>
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4">Rekap Absensi Bulanan</h1>
+    <h1 class="mt-4"><?php echo $judul_halaman; ?></h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
         <li class="breadcrumb-item active">Rekap Absensi</li>
     </ol>
 
     <!-- FORM FILTER -->
-    <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-filter me-1"></i>Pilih Periode dan Kelas</div>
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0 py-3">
+            <h5 class="m-0 text-primary"><i class="fas fa-filter me-2"></i>Filter Data</h5>
+        </div>
         <div class="card-body">
             <form method="GET" action="absensi_rekap.php">
-                <div class="row">
+                <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                        <label for="bulan" class="form-label">Bulan</label>
-                        <select name="bulan" id="bulan" class="form-select" required>
+                        <label for="bulan" class="form-label text-muted small fw-bold">Bulan</label>
+                        <select name="bulan" id="bulan" class="form-select border-primary" required>
                             <?php for ($i = 1; $i <= 12; $i++): ?>
                                 <option value="<?php echo $i; ?>" <?php if($i == $selected_bulan) echo 'selected'; ?>><?php echo $nama_bulan[$i]; ?></option>
                             <?php endfor; ?>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="tahun" class="form-label">Tahun</label>
-                        <select name="tahun" id="tahun" class="form-select" required>
+                        <label for="tahun" class="form-label text-muted small fw-bold">Tahun</label>
+                        <select name="tahun" id="tahun" class="form-select border-primary" required>
                             <?php for ($i = date('Y'); $i >= date('Y') - 5; $i--): ?>
                                 <option value="<?php echo $i; ?>" <?php if($i == $selected_tahun) echo 'selected'; ?>><?php echo $i; ?></option>
                             <?php endfor; ?>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label for="kelas" class="form-label">Kelas</label>
-                        <select name="kelas" id="kelas" class="form-select" required>
+                        <label for="kelas" class="form-label text-muted small fw-bold">Kelas</label>
+                        <select name="kelas" id="kelas" class="form-select border-primary" required>
                             <option value="">-- Pilih Kelas --</option>
                             <?php 
                             // Tampilkan kelas yang diajar oleh guru ini
@@ -71,8 +73,8 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                             ?>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                         <button type="submit" class="btn btn-primary w-100">Tampilkan</button>
+                    <div class="col-md-2">
+                         <button type="submit" class="btn btn-primary w-100 shadow-sm"><i class="fas fa-search me-1"></i> Tampilkan</button>
                     </div>
                 </div>
             </form>
@@ -88,7 +90,6 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
             $active_id_tahun_ajaran = mysqli_fetch_assoc($active_ta_result)['id_tahun_ajaran'];
 
             // 1. Ambil semua id_mengajar untuk guru & kelas ini (di tahun ajaran aktif)
-            //    Kita ambil semua mapel yang diajar di kelas ini
             $q_mengajar = "SELECT id_mengajar FROM mengajar 
                            WHERE id_guru = {$id_guru_login} 
                              AND id_kelas = {$selected_kelas} 
@@ -120,29 +121,30 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                 $res_absensi = mysqli_query($koneksi, $q_absensi);
                 
                 while($row = mysqli_fetch_assoc($res_absensi)) {
-                    // Jika ada duplikasi data (beda mapel di hari sama), data terakhir akan menimpa
-                    // Idealnya mungkin perlu logika 'Prioritas' (misal jika ada Alfa, tampilkan Alfa), tapi ini cukup standard.
+                    // Jika ada duplikasi data, data terakhir akan menimpa
                     $absensi_data[$row['id_siswa']][$row['tgl']] = $row['status'];
                 }
                 
                 $jumlah_hari = cal_days_in_month(CAL_GREGORIAN, $selected_bulan, $tahun_numerik);
         ?>
-    <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-calendar-alt me-1"></i>Rekap Kehadiran: <?php echo $nama_bulan[$selected_bulan] . " " . $tahun_numerik; ?></div>
-        <div class="card-body">
-            <div class="alert alert-info py-2">
-                <i class="fas fa-info-circle"></i> Klik pada status (H, S, I, A, -) untuk mengisi absensi harian.
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-calendar-alt me-2"></i>
+                Rekap Periode: <strong><?php echo $nama_bulan[$selected_bulan] . " " . $tahun_numerik; ?></strong>
             </div>
+            <div>
+                <small class="text-white-50"><i class="fas fa-info-circle me-1"></i> Klik status untuk edit</small>
+            </div>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="text-center table-dark">
+                <table class="table table-bordered table-striped table-hover mb-0" style="font-size: 0.9rem;">
+                    <thead class="bg-light text-center align-middle sticky-top" style="z-index: 10;">
                         <tr>
-                            <th class="align-middle py-3" rowspan="2" style="min-width: 250px;">Nama Siswa</th>
-                            <th colspan="<?php echo $jumlah_hari; ?>" class="py-2">Tanggal</th>
-                        </tr>
-                        <tr>
+                            <th class="py-3 bg-light" scope="col" style="position: sticky; left: 0; z-index: 20; min-width: 250px;">Nama Siswa</th>
                             <?php for ($i = 1; $i <= $jumlah_hari; $i++): ?>
-                                <th class="p-2"><?php echo $i; ?></th>
+                                <th scope="col" style="min-width: 35px;"><?php echo $i; ?></th>
                             <?php endfor; ?>
                         </tr>
                     </thead>
@@ -151,41 +153,56 @@ $nama_bulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
                         if(mysqli_num_rows($res_siswa) > 0) {
                             while($siswa = mysqli_fetch_assoc($res_siswa)): ?>
                             <tr>
-                                <td class="fw-bold text-dark px-3"><?php echo htmlspecialchars($siswa['nama_lengkap']); ?></td>
+                                <td class="fw-bold text-dark px-3 bg-white" style="position: sticky; left: 0; z-index: 10; border-right: 2px solid #dee2e6;">
+                                    <?php echo htmlspecialchars($siswa['nama_lengkap']); ?>
+                                </td>
                                 <?php for ($i = 1; $i <= $jumlah_hari; $i++): 
                                     $status = $absensi_data[$siswa['id_siswa']][$i] ?? '-';
-                                    $badge_color = 'secondary';
-                                    if($status == 'Hadir') $badge_color = 'success';
-                                    if($status == 'Sakit') $badge_color = 'warning';
-                                    if($status == 'Izin') $badge_color = 'info';
-                                    if($status == 'Alfa') $badge_color = 'danger';
+                                    $badge_class = 'secondary'; 
+                                    $badge_text = '';
+
+                                    if($status == 'Hadir') { $badge_class = 'success'; $badge_text = 'H'; }
+                                    elseif($status == 'Sakit') { $badge_class = 'warning'; $badge_text = 'S'; }
+                                    elseif($status == 'Izin') { $badge_class = 'info'; $badge_text = 'I'; }
+                                    elseif($status == 'Alfa') { $badge_class = 'danger'; $badge_text = 'A'; }
+                                    else { $badge_text = '-'; }
 
                                     $tanggal_link = $tahun_numerik . '-' . str_pad($selected_bulan, 2, '0', STR_PAD_LEFT) . '-' . str_pad($i, 2, '0', STR_PAD_LEFT);
-                                    // Link ke absensi.php tanpa parameter mapel (user harus pilih mapel di sana)
+                                    // Link ke absensi.php
                                     $link_absensi = "absensi.php?tanggal={$tanggal_link}&kelas={$selected_kelas}";
                                 ?>
-                                    <td class="text-center p-1">
-                                        <a href="<?php echo $link_absensi; ?>" title="Input Absensi Tanggal <?php echo $i; ?>" class="text-decoration-none d-block">
-                                            <span class="badge bg-<?php echo $badge_color; ?> py-2 w-100 rounded-0" style="min-width: 25px;"><?php echo substr($status, 0, 1); ?></span>
+                                    <td class="text-center p-0 align-middle">
+                                        <a href="<?php echo $link_absensi; ?>" class="d-block w-100 h-100 py-2 text-decoration-none" title="Edit Tgl <?php echo $i; ?>">
+                                            <?php if($status != '-'): ?>
+                                                <span class="badge rounded-circle bg-<?php echo $badge_class; ?>" style="width: 25px; height: 25px; line-height: 20px; padding: 0;">
+                                                    <?php echo $badge_text; ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted small">-</span>
+                                            <?php endif; ?>
                                         </a>
                                     </td>
                                 <?php endfor; ?>
                             </tr>
                             <?php endwhile; 
                         } else {
-                            echo "<tr><td colspan='" . ($jumlah_hari + 1) . "' class='text-center'>Belum ada siswa di kelas ini.</td></tr>";
+                            echo "<tr><td colspan='" . ($jumlah_hari + 1) . "' class='text-center py-4'>Belum ada data siswa di kelas ini.</td></tr>";
                         }
                         ?>
                     </tbody>
                 </table>
             </div>
-             <div class="mt-3">
-                <strong>Keterangan:</strong>
-                <span class="badge bg-success">H: Hadir</span>
-                <span class="badge bg-warning text-dark">S: Sakit</span>
-                <span class="badge bg-info text-dark">I: Izin</span>
-                <span class="badge bg-danger">A: Alfa</span>
-                <span class="badge bg-secondary">-: Belum Diabsen</span>
+            
+            <!-- Legend / Keterangan -->
+            <div class="card-footer bg-white border-top">
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center">
+                    <small class="fw-bold text-muted me-2">KETERANGAN:</small>
+                    <span class="badge rounded-pill bg-success"><i class="fas fa-check me-1"></i>Hadir (H)</span>
+                    <span class="badge rounded-pill bg-warning text-dark"><i class="fas fa-notes-medical me-1"></i>Sakit (S)</span>
+                    <span class="badge rounded-pill bg-info text-dark"><i class="fas fa-envelope me-1"></i>Izin (I)</span>
+                    <span class="badge rounded-pill bg-danger"><i class="fas fa-times me-1"></i>Alfa (A)</span>
+                    <span class="badge rounded-pill bg-secondary"><i class="fas fa-minus me-1"></i>Belum Absen</span>
+                </div>
             </div>
         </div>
     </div>

@@ -51,8 +51,19 @@ if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
         .main-wrapper { display: flex; flex: 1; }
         .content-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
         
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            min-height: 100vh;
+        }
+
         @media (max-width: 992px) {
             .main-wrapper { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                height: auto;
+            }
         }
     </style>
 </head>

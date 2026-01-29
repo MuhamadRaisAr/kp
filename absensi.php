@@ -2,15 +2,17 @@
 require_once 'includes/auth_check.php';
 require_once 'includes/header.php';
 require_once 'includes/koneksi.php';
+
 $judul_halaman = "Absensi Siswa Harian";
 
-// Ambil variabel dari session dan URL
-$id_guru_login = isset($_SESSION['id_guru']) ? (int)$_SESSION['id_guru'] : null;
-$role_login = isset($_SESSION['role']) ? strtolower($_SESSION['role']) : 'guest'; // Ambil dan ubah ke huruf kecil
+// SESSION
+$id_guru_login = $_SESSION['id_guru'] ?? null;
+$role_login    = strtolower($_SESSION['role'] ?? 'guest');
 
-// Hanya untuk guru (Pengecekan role dibuat case-insensitive)
 if ($role_login !== 'guru' || !$id_guru_login) {
-    echo '<div class="container-fluid px-4"><div class="alert alert-danger mt-4">Halaman ini hanya untuk Guru.</div></div>';
+    echo '<div class="container-fluid px-4">
+            <div class="alert alert-danger mt-4">Halaman ini hanya untuk Guru.</div>
+          </div>';
     require_once 'includes/footer.php';
     exit();
 }
@@ -21,11 +23,13 @@ $selected_tahun = isset($_GET['tahun_ajaran']) ? (int)$_GET['tahun_ajaran'] : ''
 $selected_kelas = isset($_GET['kelas']) ? (int)$_GET['kelas'] : '';
 // $selected_mapel tidak diperlukan lagi
 
-// Jika tahun ajaran belum dipilih, coba ambil yang aktif sebagai default
-if (empty($selected_tahun)) {
-    $q_tahun_aktif = mysqli_query($koneksi, "SELECT id_tahun_ajaran FROM tahun_ajaran WHERE status_aktif = 'Aktif' LIMIT 1");
-    if ($q_tahun_aktif && mysqli_num_rows($q_tahun_aktif) > 0) {
-        $selected_tahun = mysqli_fetch_assoc($q_tahun_aktif)['id_tahun_ajaran'];
+// DEFAULT TAHUN AJARAN AKTIF
+if (!$selected_tahun) {
+    if (isset($koneksi)) {
+         $q = mysqli_query($koneksi, "SELECT id_tahun_ajaran FROM tahun_ajaran WHERE status_aktif='Aktif' LIMIT 1");
+         if ($q && mysqli_num_rows($q) > 0) {
+             $selected_tahun = mysqli_fetch_assoc($q)['id_tahun_ajaran'];
+         }
     }
 }
 ?>
@@ -196,5 +200,3 @@ if (empty($selected_tahun)) {
         }
     endif; ?>
 </div>
-
-<?php require_once 'includes/footer.php'; ?>

@@ -180,7 +180,7 @@ $selected_mapel = isset($_GET['mapel']) ? (int)$_GET['mapel'] : '';
     <?php 
     endif; 
     ?> 
-    ?>
+
 </div>
 
 <?php require_once 'includes/footer.php'; ?>

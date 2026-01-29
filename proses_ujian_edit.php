@@ -1,62 +1,48 @@
 <?php
-// Selalu mulai session di awal
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-require_once 'includes/koneksi.php';
 require_once 'includes/auth_check.php';
+require_once 'includes/koneksi.php';
 
-// 1. Validasi Akses: Guru
-if (!isset($_SESSION['id_guru']) || empty($_SESSION['id_guru'])) {
-    header("Location: dashboard.php?error=Akses ditolak");
-    exit();
-}
-$id_guru_login = (int)$_SESSION['id_guru'];
-
-// 2. Validasi Metode: POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (!isset($_SESSION['id_guru'])) {
     header("Location: ujian.php");
     exit();
 }
 
-// 3. Ambil dan Validasi Data dari Form
-$id_ujian = isset($_POST['id_ujian']) ? (int)$_POST['id_ujian'] : 0;
-// $id_mengajar tidak perlu diambil lagi karena tidak boleh diubah
-$judul_ujian = isset($_POST['judul_ujian']) ? trim($_POST['judul_ujian']) : '';
-$durasi_menit = isset($_POST['durasi_menit']) ? (int)$_POST['durasi_menit'] : 0;
-$waktu_mulai_str = isset($_POST['waktu_mulai']) ? trim($_POST['waktu_mulai']) : '';
-$waktu_selesai_str = isset($_POST['waktu_selesai']) ? trim($_POST['waktu_selesai']) : '';
+$id_guru = (int)$_SESSION['id_guru'];
 
-// Konversi waktu
-$waktu_mulai = date('Y-m-d H:i:s', strtotime($waktu_mulai_str));
-$waktu_selesai = date('Y-m-d H:i:s', strtotime($waktu_selesai_str));
+$id_ujian = (int)$_POST['id_ujian'];
+$mode = $_POST['mode'];
+// Variables initialized later with fallback
+$waktu_mulai = $_POST['waktu_mulai'];
+$waktu_selesai = $_POST['waktu_selesai'];
 
-// Validasi dasar
-if ($id_ujian <= 0 || empty($judul_ujian) || $durasi_menit <= 0 || empty($waktu_mulai_str) || empty($waktu_selesai_str)) {
-    header("Location: ujian_edit.php?id=" . $id_ujian . "&status=error&msg=" . urlencode("Semua field wajib diisi."));
+// validasi kepemilikan ujian & ambil data lama (fallback jika form belum refresh)
+$cek = "SELECT u.id_ujian, u.judul_ujian, u.durasi_menit
+        FROM ujian u
+        JOIN mengajar m ON u.id_mengajar = m.id_mengajar
+        WHERE u.id_ujian = ? AND m.id_guru = ?
+        LIMIT 1";
+
+$stmt = mysqli_prepare($koneksi, $cek);
+mysqli_stmt_bind_param($stmt, "ii", $id_ujian, $id_guru);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+if (mysqli_num_rows($res) !== 1) {
+    header("Location: ujian.php");
     exit();
 }
-if (strtotime($waktu_selesai_str) <= strtotime($waktu_mulai_str)) {
-    header("Location: ujian_edit.php?id=" . $id_ujian . "&status=error&msg=" . urlencode("Waktu selesai harus setelah waktu mulai."));
+
+$data_lama = mysqli_fetch_assoc($res);
+
+// Gunakan data dari POST jika ada, jika tidak (cache lama) gunakan data database
+$judul_ujian = isset($_POST['judul_ujian']) ? $_POST['judul_ujian'] : $data_lama['judul_ujian'];
+$durasi_menit = isset($_POST['durasi_menit']) ? (int)$_POST['durasi_menit'] : $data_lama['durasi_menit'];
+
+if (mysqli_num_rows($res) !== 1) {
+    header("Location: ujian.php");
     exit();
 }
-
-// 4. Validasi Kepemilikan & Status Draft
-// (PENTING: Pastikan guru ini adalah pemilik ujian DAN ujian masih draft sebelum update)
-$query_cek = "SELECT u.id_ujian 
-              FROM ujian u
-              JOIN mengajar m ON u.id_mengajar = m.id_mengajar
-              WHERE u.id_ujian = ? AND m.id_guru = ?";
-$stmt_cek = mysqli_prepare($koneksi, $query_cek);
-mysqli_stmt_bind_param($stmt_cek, "ii", $id_ujian, $id_guru_login);
-mysqli_stmt_execute($stmt_cek);
-$result_cek = mysqli_stmt_get_result($stmt_cek);
-
-if (mysqli_num_rows($result_cek) == 0) {
-    header("Location: ujian.php?error=Akses ditolak atau ujian tidak bisa diedit lagi.");
-    exit();
-}
-mysqli_stmt_close($stmt_cek); // Tutup statement cek
+mysqli_stmt_close($stmt);
 
 // 5. Proses Update ke Database
 $query_update = "UPDATE ujian 

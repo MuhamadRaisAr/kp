@@ -78,8 +78,11 @@
         }
         // Notifikasi logout
         if(isset($_GET['logout'])) {
+            $last_user_display = isset($_GET['u']) ? htmlspecialchars($_GET['u']) : '';
+            $msg = $last_user_display ? "Sampai jumpa, <strong>$last_user_display</strong>! Anda telah berhasil logout." : "Anda telah berhasil logout.";
+            
             echo '<div class="alert alert-success text-center py-2" role="alert">
-                    Anda telah berhasil logout.
+                    ' . $msg . '
                   </div>';
         }
         // Notifikasi reset password sukses
@@ -93,7 +96,9 @@
                 <label for="username" class="form-label">Username</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                    <input type="text" class="form-control" id="username" name="username" placeholder="Masukkan username" required autofocus>
+                    <input type="text" class="form-control" id="username" name="username" 
+                           value="<?php echo isset($_GET['u']) ? htmlspecialchars($_GET['u']) : ''; ?>" 
+                           placeholder="Masukkan username" required <?php echo isset($_GET['u']) ? '' : 'autofocus'; ?>>
                 </div>
             </div>
             <div class="mb-3">
@@ -112,7 +117,6 @@
                     <i class="fas fa-sign-in-alt me-2"></i> Login
                 </button>
             </div>
-            
 
         </form>
     </div>
