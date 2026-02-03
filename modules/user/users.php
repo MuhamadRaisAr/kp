@@ -1,14 +1,14 @@
 <?php
-require_once 'includes/auth_check.php';
+require_once '../../includes/auth_check.php';
 
 // Hanya admin yang bisa mengakses halaman ini
 if ($_SESSION['role'] !== 'admin') {
-    header("Location: dashboard.php");
+    header("Location: ../../dashboard.php");
     exit;
 }
 
-require_once 'includes/header.php';
-require_once 'includes/koneksi.php';
+require_once '../../includes/header.php';
+require_once '../../includes/koneksi.php';
 
 $judul_halaman = "Manajemen User";
 ?>
@@ -16,7 +16,7 @@ $judul_halaman = "Manajemen User";
 <div class="container-fluid px-4">
     <h1 class="mt-4"><?= $judul_halaman; ?></h1>
     <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="../../dashboard.php">Dashboard</a></li>
         <li class="breadcrumb-item active"><?= $judul_halaman; ?></li>
     </ol>
 
@@ -133,4 +133,4 @@ $judul_halaman = "Manajemen User";
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../../includes/footer.php'; ?>

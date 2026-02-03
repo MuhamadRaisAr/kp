@@ -5,7 +5,7 @@ ob_start();
 // Panggil file-file yang dibutuhkan
 require_once '../../includes/auth_check.php';
 require_once '../../includes/koneksi.php';
-require_once 'lib/fpdf.php';
+require_once '../../lib/fpdf.php';
 
 // Ambil ID dari URL dan pastikan valid
 if (!isset($_GET['id_siswa']) || !isset($_GET['id_tahun_ajaran'])) {
@@ -94,7 +94,7 @@ $pdf = new FPDF('P', 'mm', 'A4');
 $pdf->AddPage();
 
 // --- KOP SURAT LEGAL ---
-$logo_path = 'assets/img/logo_sekolah.png';
+$logo_path = '../../assets/img/logo_sekolah.png';
 if (file_exists($logo_path)) {
     // Image(file, x, y, w, h)
     $pdf->Image($logo_path, 15, 10, 22); 

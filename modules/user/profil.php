@@ -6,8 +6,6 @@ require_once '../../includes/koneksi.php';
 
 // Mengatur judul halaman
 $judul_halaman = "Profil Pengguna";
-// Panggil file header.php
-require_once '../../includes/header.php';
 
 // Mengambil informasi user dari session
 $id_user = $_SESSION['id_user'];
@@ -21,15 +19,20 @@ $result = mysqli_stmt_get_result($stmt);
 $user_data = mysqli_fetch_assoc($result);
 
 // Menentukan path foto profil (gambar asli atau gambar default)
-$foto_path = 'assets/img/default-avatar.png'; // Path default
-if (!empty($user_data['foto_profil']) && file_exists('assets/uploads/profiles/' . $user_data['foto_profil'])) {
-    $foto_path = 'assets/uploads/profiles/' . $user_data['foto_profil'];
+// Untuk TAMPILAN (HTML src), gunakan $base_url
+$foto_path_html = $base_url . 'assets/img/default-avatar.png'; 
+
+// Untuk PENGECEKAN FILE (PHP file_exists), gunakan path fisik relatif atau absolut
+$foto_path_fisik = '../../assets/uploads/profiles/' . $user_data['foto_profil'];
+
+if (!empty($user_data['foto_profil']) && file_exists($foto_path_fisik)) {
+    $foto_path_html = $base_url . 'assets/uploads/profiles/' . $user_data['foto_profil'];
 }
 ?>
 <div class="container-fluid px-4">
     <h1 class="mt-4">Profil Pengguna</h1>
     <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/sistem-penilaian/dashboard.php">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="../../dashboard.php">Dashboard</a></li>
         <li class="breadcrumb-item active">Profil</li>
     </ol>
 
@@ -44,7 +47,7 @@ if (!empty($user_data['foto_profil']) && file_exists('assets/uploads/profiles/' 
         <div class="card-body">
             <div class="row align-items-center mb-4">
                 <div class="col-md-3 text-center">
-                    <img src="<?php echo $foto_path; ?>" class="img-fluid rounded-circle" alt="Foto Profil" style="width: 150px; height: 150px; object-fit: cover;">
+                    <img src="<?php echo $foto_path_html; ?>" class="img-fluid rounded-circle" alt="Foto Profil" style="width: 150px; height: 150px; object-fit: cover;">
                 </div>
                 <div class="col-md-9">
                     <p><strong>Username:</strong> <?php echo htmlspecialchars($user_data['username']); ?></p>

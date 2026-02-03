@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Cek apakah ada file yang diupload dan tidak ada error
     if (isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] == 0 && $_FILES['foto_profil']['size'] > 0) {
         $file = $_FILES['foto_profil'];
-        $target_dir = "assets/uploads/profiles/";
+        $target_dir = "../../assets/uploads/profiles/";
         
         // Buat nama file unik untuk menghindari konflik
         $ekstensi = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));

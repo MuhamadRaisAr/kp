@@ -4,6 +4,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// DEFINISI BASE URL (PENTING AGAR TIDAK ERROR DI SUB-FOLDER)
+if (!isset($base_url)) {
+    // Sesuaikan ini dengan folder project Anda di Laragon/XAMPP
+    $base_url = '/sistem-penilaian/'; 
+}
+
 // Mengatur judul halaman default jika tidak ditentukan di halaman lain
 if (!isset($judul_halaman)) {
     $judul_halaman = "Sistem Penilaian SMK";
@@ -15,12 +21,12 @@ $is_logged_in = isset($_SESSION['username']);
 // ==========================================================
 // AMBIL FOTO PROFIL DARI SESSION UNTUK NAVBAR
 // ==========================================================
-$foto_path_navbar = 'assets/img/default-avatar.png'; // Path default
+$foto_path_navbar = $base_url . 'assets/img/default-avatar.png'; // Path default
 
 // Kita percaya session-nya dan HAPUS file_exists() yang error
 if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
     
-    $foto_path_navbar = 'assets/uploads/profiles/' . $_SESSION['foto_profil'];
+    $foto_path_navbar = $base_url . 'assets/uploads/profiles/' . $_SESSION['foto_profil'];
 }
 // ==========================================================
 ?>
@@ -92,7 +98,7 @@ if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <a class="navbar-brand ms-2 ms-lg-0" href="dashboard.php"><?php echo htmlspecialchars($judul_halaman); ?></a>
+                <a class="navbar-brand ms-2 ms-lg-0" href="<?php echo $base_url; ?>dashboard.php"><?php echo htmlspecialchars($judul_halaman); ?></a>
                 
                 <div class="collapse navbar-collapse" id="navbarContent">
                     <ul class="navbar-nav ms-auto">
@@ -103,9 +109,9 @@ if ($is_logged_in && !empty($_SESSION['foto_profil'])) {
                                 <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Pengguna'; ?>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="profil.php">Profil</a></li>
+                                <li><a class="dropdown-item" href="<?php echo $base_url; ?>modules/user/profil.php">Profil</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="logout.php">Logout</a></li>
+                                <li><a class="dropdown-item text-danger" href="<?php echo $base_url; ?>logout.php">Logout</a></li>
                             </ul>
                         </li>
                     </ul>

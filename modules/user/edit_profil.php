@@ -31,7 +31,7 @@ require_once '../../includes/header.php';
 <div class="container-fluid px-4">
     <h1 class="mt-4">Edit Profil</h1>
     <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/sistem-penilaian/dashboard.php">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="../../dashboard.php">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="profil.php">Profil</a></li>
         <li class="breadcrumb-item active">Edit Profil</li>
     </ol>

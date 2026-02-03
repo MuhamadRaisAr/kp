@@ -1,8 +1,8 @@
 <?php
 // Panggil file-file yang dibutuhkan
-require_once 'includes/auth_check.php';
-require_once 'includes/header.php';
-require_once 'includes/koneksi.php';
+require_once '../../includes/auth_check.php';
+require_once '../../includes/header.php';
+require_once '../../includes/koneksi.php';
 
 $judul_halaman = "Lihat Nilai Saya";
 
@@ -11,13 +11,13 @@ $role_check = isset($_SESSION['role']) ? strtolower($_SESSION['role']) : '';
 
 if ($role_check !== 'siswa') {
     echo '<div class="container-fluid px-4"><div class="alert alert-danger mt-4">Akses ditolak. Halaman ini hanya untuk siswa.</div></div>';
-    require_once 'includes/footer.php';
+    require_once '../../includes/footer.php';
     exit();
 }
 
 if (empty($_SESSION['id_siswa'])) {
     echo '<div class="container-fluid px-4"><div class="alert alert-warning mt-4">Akses Ditolak. Akun Anda tidak terhubung dengan data siswa yang valid.</div></div>';
-    require_once 'includes/footer.php';
+    require_once '../../includes/footer.php';
     exit();
 }
 
@@ -47,7 +47,7 @@ function tentukanPredikat($nilai_akhir) {
     <div class="container-fluid px-4">
         <h1 class="mt-4"><?php echo $judul_halaman; ?></h1>
         <ol class="breadcrumb mb-4">
-            <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="../../dashboard.php">Dashboard</a></li>
             <li class="breadcrumb-item active">Lihat Nilai</li>
         </ol>
         
@@ -182,4 +182,4 @@ function tentukanPredikat($nilai_akhir) {
     <?php endforeach; ?>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
+<?php require_once '../../includes/footer.php'; ?>

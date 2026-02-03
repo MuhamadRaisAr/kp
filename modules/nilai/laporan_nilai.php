@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        fetch('api_get_mapel.php?id_kelas=' + idKelas)
+        fetch('../mapel/api_get_mapel.php?id_kelas=' + idKelas)
             .then(response => response.json())
             .then(data => {
                 mapelDropdown.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
