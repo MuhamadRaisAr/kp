@@ -15,7 +15,7 @@ $judul_halaman = "Tambah Tahun Ajaran";
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-plus-circle me-1"></i>Formulir Tambah Tahun Ajaran</div>
         <div class="card-body">
-            <form action="proses_tambah_tahun_ajaran.php" method="POST">
+            <form action="proses_tambah_tahun_ajaran.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="tahun_ajaran" class="form-label">Tahun Ajaran</label>
                     <input type="text" class="form-control" id="tahun_ajaran" name="tahun_ajaran" placeholder="Contoh: 2025/2026" required>

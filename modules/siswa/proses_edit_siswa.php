@@ -26,10 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         mysqli_stmt_bind_param($stmt, "ssssssii", $nis, $nisn, $nama_lengkap, $tanggal_lahir, $jenis_kelamin, $alamat, $id_kelas, $id_siswa);
     }
     
+    
     if (mysqli_stmt_execute($stmt)) {
-        header("Location: siswa.php?status=sukses_edit");
+        // Jika berhasil, redirect ke halaman daftar siswa KELAS TERSEBUT dengan pesan sukses
+        header("Location: siswa_list.php?kelas=" . $id_kelas . "&status=sukses_edit");
     } else {
-        header("Location: siswa.php?status=gagal_edit");
+        header("Location: siswa_list.php?kelas=" . $id_kelas . "&status=gagal_edit");
     }
     
     mysqli_stmt_close($stmt);

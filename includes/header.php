@@ -4,11 +4,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// DEFINISI BASE URL (PENTING AGAR TIDAK ERROR DI SUB-FOLDER)
-if (!isset($base_url)) {
-    // Sesuaikan ini dengan folder project Anda di Laragon/XAMPP
-    $base_url = '/sistem-penilaian/'; 
-}
+// DEFINISI BASE URL & KONFIGURASI (PENTING AGAR TIDAK ERROR DI SUB-FOLDER)
+require_once __DIR__ . '/config.php';
 
 // Mengatur judul halaman default jika tidak ditentukan di halaman lain
 if (!isset($judul_halaman)) {

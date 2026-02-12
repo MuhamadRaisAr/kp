@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 } else {
     // Jika file diakses langsung, tendang ke halaman dashboard
-    header("Location: /sistem-penilaian/dashboard.php");
+    header("Location: " . $base_url . "dashboard.php");
     exit();
 }
 ?>

@@ -1,6 +1,6 @@
 <?php
 require_once '../../includes/auth_check.php';
-if ($_SESSION['role'] != 'admin') { die("Akses ditolak."); }
+// Role check moved to later in the file
 require_once '../../includes/header.php';
 require_once '../../includes/koneksi.php';
 
@@ -9,11 +9,31 @@ $id_mengajar = $_GET['id'];
 if (!$id_mengajar) { header('Location: mengajar.php'); exit(); }
 
 // Ambil data penugasan yang akan diedit
-$stmt_mengajar = mysqli_prepare($koneksi, "SELECT * FROM mengajar WHERE id_mengajar = ?");
+$stmt_mengajar = mysqli_prepare($koneksi, "SELECT m.*, k.id_guru_wali_kelas 
+                                           FROM mengajar m 
+                                           JOIN kelas k ON m.id_kelas = k.id_kelas 
+                                           WHERE m.id_mengajar = ?");
 mysqli_stmt_bind_param($stmt_mengajar, "i", $id_mengajar);
 mysqli_stmt_execute($stmt_mengajar);
 $result_mengajar = mysqli_stmt_get_result($stmt_mengajar);
 $data_mengajar = mysqli_fetch_assoc($result_mengajar);
+
+if (!$data_mengajar) {
+    die("Data tidak ditemukan.");
+}
+
+// Cek hak akses: Admin ATAU Wali Kelas dari kelas ini
+$can_edit = false;
+$role = $_SESSION['role'] ?? 'guest';
+if ($role == 'admin') {
+    $can_edit = true;
+} elseif ($role == 'guru' && isset($_SESSION['id_guru']) && $_SESSION['id_guru'] == $data_mengajar['id_guru_wali_kelas']) {
+    $can_edit = true;
+}
+
+if (!$can_edit) {
+    die("Akses ditolak. Anda bukan Wali Kelas dari kelas ini.");
+}
 
 // Ambil semua data untuk dropdown
 $result_guru = mysqli_query($koneksi, "SELECT * FROM guru ORDER BY nama_lengkap");
@@ -73,6 +93,31 @@ $judul_halaman = "Edit Penugasan Mengajar";
                             echo "<option value='{$row['id_tahun_ajaran']}' $selected>" . htmlspecialchars($row['tahun_ajaran']) . " - " . htmlspecialchars($row['semester']) . "</option>";
                         } ?>
                     </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="hari" class="form-label">Hari</label>
+                    <select name="hari" id="hari" class="form-select" required>
+                        <option value="">-- Pilih Hari --</option>
+                        <?php
+                        $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                        foreach ($days as $day) {
+                            $selected = ($day == $data_mengajar['hari']) ? 'selected' : '';
+                            echo "<option value='$day' $selected>$day</option>";
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label for="jam_mulai" class="form-label">Jam Mulai</label>
+                        <input type="time" name="jam_mulai" id="jam_mulai" class="form-control" value="<?php echo htmlspecialchars($data_mengajar['jam_mulai']); ?>" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="jam_selesai" class="form-label">Jam Selesai</label>
+                        <input type="time" name="jam_selesai" id="jam_selesai" class="form-control" value="<?php echo htmlspecialchars($data_mengajar['jam_selesai']); ?>" required>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">Update</button>

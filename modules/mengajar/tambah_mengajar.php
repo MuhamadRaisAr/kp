@@ -23,7 +23,7 @@ $result_tahun = mysqli_query($koneksi, "SELECT * FROM tahun_ajaran WHERE status_
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-plus-circle me-1"></i>Formulir Penugasan</div>
         <div class="card-body">
-            <form action="proses_tambah_mengajar.php" method="POST">
+            <form action="proses_tambah_mengajar.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="id_guru" class="form-label">Guru</label>
                     <select class="form-select" name="id_guru" required>

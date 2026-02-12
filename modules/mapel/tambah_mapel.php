@@ -15,7 +15,7 @@ $judul_halaman = "Tambah Mata Pelajaran";
     <div class="card mb-4">
         <div class="card-header"><i class="fas fa-plus-circle me-1"></i>Formulir Tambah Mapel</div>
         <div class="card-body">
-            <form action="proses_tambah_mapel.php" method="POST">
+            <form action="proses_tambah_mapel.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="kode_mapel" class="form-label">Kode Mapel</label>
                     <input type="text" class="form-control" id="kode_mapel" name="kode_mapel" required>

@@ -124,7 +124,7 @@ require_once '../../includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <form action="" method="POST">
+            <form action="" method="POST" autocomplete="off">
                 
                 <!-- 1. PILIH ROLE (TRIGGER JS DI FOOTER) -->
                 <div class="mb-3">

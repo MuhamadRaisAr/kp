@@ -26,7 +26,7 @@
         // ================= ADMIN =================
         if ($role == 'admin') : ?>
             <li><a href="/sistem-penilaian/modules/guru/guru.php" class="nav-link text-white <?= (strpos($_SERVER['PHP_SELF'], '/guru/') !== false) ? 'active' : '' ?>"><i class="fas fa-user-graduate me-2"></i>Guru</a></li>
-            <li><a href="/sistem-penilaian/modules/siswa/siswa.php" class="nav-link text-white <?= (strpos($_SERVER['PHP_SELF'], '/siswa/') !== false && strpos($_SERVER['PHP_SELF'], 'nilai') === false && strpos($_SERVER['PHP_SELF'], 'absensi') === false) ? 'active' : '' ?>"><i class="fas fa-chalkboard-teacher me-2"></i>Siswa</a></li>
+            <li><a href="/sistem-penilaian/modules/siswa/siswa.php" class="nav-link text-white <?= (strpos($_SERVER['PHP_SELF'], '/modules/siswa/') !== false) ? 'active' : '' ?>"><i class="fas fa-chalkboard-teacher me-2"></i>Siswa</a></li>
             <li><a href="/sistem-penilaian/modules/kelas/kelas.php" class="nav-link text-white <?= (strpos($_SERVER['PHP_SELF'], '/kelas/') !== false) ? 'active' : '' ?>"><i class="fas fa-door-open me-2"></i>Kelas</a></li>
 
             <hr>

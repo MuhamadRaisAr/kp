@@ -3,7 +3,7 @@ require_once '../../includes/auth_check.php';
 require_once '../../includes/koneksi.php';
 
 if ($_SESSION['role'] != 'guru') {
-    header("Location: /sistem-penilaian/dashboard.php");
+    header("Location: " . $base_url . "dashboard.php");
     exit();
 }
 

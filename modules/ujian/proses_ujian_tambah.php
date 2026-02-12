@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Ambil data, gunakan htmlspecialchars untuk keamanan dasar
 $id_mengajar = isset($_POST['id_mengajar']) ? (int)$_POST['id_mengajar'] : 0;
 $judul_ujian = isset($_POST['judul_ujian']) ? trim($_POST['judul_ujian']) : '';
+$jenis_ujian = isset($_POST['jenis_ujian']) ? trim($_POST['jenis_ujian']) : 'Pilihan Ganda'; // Default
 $durasi_menit = isset($_POST['durasi_menit']) ? (int)$_POST['durasi_menit'] : 0;
 $waktu_mulai_str = isset($_POST['waktu_mulai']) ? trim($_POST['waktu_mulai']) : '';
 $waktu_selesai_str = isset($_POST['waktu_selesai']) ? trim($_POST['waktu_selesai']) : '';
@@ -67,16 +68,17 @@ if ($count == 0) {
 $status_ujian = 'Draft';
 
 // Gunakan prepared statement untuk menyimpan data
-$query_insert = "INSERT INTO ujian (id_mengajar, judul_ujian, durasi_menit, waktu_mulai, waktu_selesai, status_ujian) 
-                 VALUES (?, ?, ?, ?, ?, ?)";
+$query_insert = "INSERT INTO ujian (id_mengajar, judul_ujian, jenis_ujian, durasi_menit, waktu_mulai, waktu_selesai, status_ujian) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)";
 $stmt_insert = mysqli_prepare($koneksi, $query_insert);
 
 if ($stmt_insert) {
     mysqli_stmt_bind_param(
         $stmt_insert, 
-        "isssss", // i = integer, s = string
+        "issssss", // i = integer, s = string
         $id_mengajar, 
         $judul_ujian, 
+        $jenis_ujian,
         $durasi_menit, 
         $waktu_mulai, 
         $waktu_selesai, 

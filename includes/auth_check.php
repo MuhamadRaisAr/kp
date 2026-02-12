@@ -3,10 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/config.php';
+
 // 1. Cek apakah user sudah login atau belum
 if (!isset($_SESSION['id_user'])) {
     // Jika belum login, tendang ke halaman login
-    header("Location: /sistem-penilaian/login.php");
+    header("Location: " . $base_url . "login.php");
     exit();
 }
 

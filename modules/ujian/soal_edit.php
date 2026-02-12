@@ -16,7 +16,7 @@ if ($id_soal <= 0) {
 
 // 2. Query Detail Soal & Validasi Kepemilikan (via Ujian & Guru)
 // Ambil data soal + id_ujian + pastikan ujiannya milik guru ini dan masih draft
-$query_soal = "SELECT us.*, u.status_ujian
+$query_soal = "SELECT us.*, u.status_ujian, u.jenis_ujian
                FROM ujian_soal us
                JOIN ujian u ON us.id_ujian = u.id_ujian
                JOIN mengajar m ON u.id_mengajar = m.id_mengajar
@@ -59,6 +59,11 @@ $id_ujian = $soal_data['id_ujian']; // Simpan id_ujian untuk redirect
                     <textarea class="form-control" name="pertanyaan" rows="3" required><?php echo htmlspecialchars($soal_data['pertanyaan']); ?></textarea>
                 </div>
                 
+                <?php if (isset($soal_data['jenis_ujian']) && $soal_data['jenis_ujian'] == 'Esai'): ?>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i> Untuk soal esai, Anda tidak perlu mengisi opsi jawaban dan kunci jawaban.
+                    </div>
+                <?php else: ?>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Opsi A</label>
@@ -94,6 +99,7 @@ $id_ujian = $soal_data['id_ujian']; // Simpan id_ujian untuk redirect
                         </select>
                     </div>
                 </div>
+                <?php endif; ?>
                 
                 <button type="submit" class="btn btn-primary">Simpan Perubahan Soal</button>
                 <a href="ujian_detail.php?id=<?php echo $id_ujian; ?>" class="btn btn-secondary">Batal</a>

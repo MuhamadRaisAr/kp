@@ -1,9 +1,7 @@
 <?php
-$host = 'localhost';
-$username = 'root';
-$password = 'root';
-$nama_database = 'db_nilai';
-$koneksi = mysqli_connect($host, $username, $password, $nama_database);
+require_once __DIR__ . '/config.php';
+
+$koneksi = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }

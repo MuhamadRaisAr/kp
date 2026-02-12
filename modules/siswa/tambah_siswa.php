@@ -22,6 +22,31 @@ $result_kelas = mysqli_query($koneksi, $sql_kelas);
         <li class="breadcrumb-item active">Tambah Siswa</li>
     </ol>
 
+    <?php
+    if (isset($_GET['status'])) {
+        $status = $_GET['status'];
+        $pesan = '';
+        $tipe = 'danger';
+
+        if ($status == 'gagal_nis_ada') {
+            $pesan = '<strong>Gagal!</strong> NIS yang Anda masukkan sudah terdaftar.';
+        } elseif ($status == 'gagal_nisn_ada') {
+            $pesan = '<strong>Gagal!</strong> NISN yang Anda masukkan sudah terdaftar.';
+        } elseif ($status == 'gagal_duplikat') {
+            $pesan = '<strong>Gagal!</strong> Data duplikat terdeteksi (NIS/NISN sudah ada).';
+        } elseif ($status == 'gagal_tambah') {
+            $pesan = '<strong>Gagal!</strong> Terjadi kesalahan saat menyimpan data.';
+        }
+
+        if ($pesan) {
+            echo '<div class="alert alert-'.$tipe.' alert-dismissible fade show" role="alert">
+                    '.$pesan.'
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>';
+        }
+    }
+    ?>
+
     <div class="card mb-4">
         <div class="card-header">
             <i class="fas fa-plus-circle me-1"></i>
@@ -29,7 +54,7 @@ $result_kelas = mysqli_query($koneksi, $sql_kelas);
         </div>
         <div class="card-body">
             
-            <form action="proses_tambah_siswa.php" method="POST">
+            <form action="proses_tambah_siswa.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="nis" class="form-label">NIS</label>
                     <input type="text" class="form-control" id="nis" name="nis" required>
@@ -57,17 +82,39 @@ $result_kelas = mysqli_query($koneksi, $sql_kelas);
                 </div>
                 <div class="mb-3">
                     <label for="id_kelas" class="form-label">Kelas</label>
-                    <select class="form-select" id="id_kelas" name="id_kelas" required>
-                        <option value="">-- Pilih Kelas --</option>
-                        <?php
-                        // Tampilkan daftar kelas dari database
-                        if (mysqli_num_rows($result_kelas) > 0) {
-                            while ($row_kelas = mysqli_fetch_assoc($result_kelas)) {
-                                echo "<option value='" . $row_kelas['id_kelas'] . "'>" . htmlspecialchars($row_kelas['nama_kelas']) . "</option>";
-                            }
+                    <?php
+                    $selected_kelas_id = isset($_GET['kelas']) ? (int)$_GET['kelas'] : 0;
+                    $selected_kelas_nama = '';
+                    
+                    if ($selected_kelas_id > 0) {
+                        // Ambil nama kelas jika ID kelas ada di URL
+                        $q_cek_kelas = mysqli_query($koneksi, "SELECT nama_kelas FROM kelas WHERE id_kelas = $selected_kelas_id");
+                        if ($row_cek = mysqli_fetch_assoc($q_cek_kelas)) {
+                            $selected_kelas_nama = $row_cek['nama_kelas'];
                         }
-                        ?>
-                    </select>
+                    }
+
+                    if ($selected_kelas_id > 0 && !empty($selected_kelas_nama)): 
+                    ?>
+                        <!-- Tampilan Readonly Jika Kelas Sudah Dipilih -->
+                         <input type="text" class="form-control" value="<?php echo htmlspecialchars($selected_kelas_nama); ?>" readonly disabled>
+                         <input type="hidden" name="id_kelas" value="<?php echo $selected_kelas_id; ?>">
+                    <?php else: ?>
+                        <!-- Dropdown Jika Belum Ada Kelas (Fallback) -->
+                        <select class="form-select" id="id_kelas" name="id_kelas" required>
+                            <option value="">-- Pilih Kelas --</option>
+                            <?php
+                            if (mysqli_num_rows($result_kelas) > 0) {
+                                // Reset pointer result set karena sudah dipakai sebelumnya atau query ulang jika perlu.
+                                // Tapi di script awal, $result_kelas belum di-fetch.
+                                mysqli_data_seek($result_kelas, 0); 
+                                while ($row_kelas = mysqli_fetch_assoc($result_kelas)) {
+                                    echo "<option value='" . $row_kelas['id_kelas'] . "'>" . htmlspecialchars($row_kelas['nama_kelas']) . "</option>";
+                                }
+                            }
+                            ?>
+                        </select>
+                    <?php endif; ?>
                 </div>
                 <div class="mb-3">
                     <label for="alamat" class="form-label">Alamat</label>

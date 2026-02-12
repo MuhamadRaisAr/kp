@@ -23,7 +23,7 @@ require_once '../../includes/header.php';
         </div>
         <div class="card-body">
             
-            <form action="proses_tambah_guru.php" method="POST">
+            <form action="proses_tambah_guru.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="nip" class="form-label">NIP</label>
                     <input type="text" class="form-control" id="nip" name="nip" required>

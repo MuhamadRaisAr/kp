@@ -29,7 +29,7 @@ $id_guru_login = (int)$_SESSION['id_guru'];
             Formulir Ujian Baru
         </div>
         <div class="card-body">
-            <form action="proses_ujian_tambah.php" method="POST">
+            <form action="proses_ujian_tambah.php" method="POST" autocomplete="off">
                 
                 <div class="mb-3">
                     <label for="id_mengajar" class="form-label">Pilih Mapel / Kelas / Tahun Ajaran</label>
@@ -60,6 +60,14 @@ $id_guru_login = (int)$_SESSION['id_guru'];
                         }
                         mysqli_stmt_close($stmt);
                         ?>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="jenis_ujian" class="form-label">Jenis Ujian</label>
+                    <select class="form-select" id="jenis_ujian" name="jenis_ujian" required>
+                        <option value="Pilihan Ganda">Pilihan Ganda</option>
+                        <option value="Esai">Esai (Uraian)</option>
                     </select>
                 </div>
                 

@@ -1,125 +1,66 @@
 <?php
-// 1. Panggil file auth_check.php untuk memastikan hanya user yang sudah login yang bisa mengakses halaman ini
 require_once '../../includes/auth_check.php';
-
-// 2. Atur judul halaman
-$judul_halaman = "Data Siswa";
-
-// 3. Panggil file header.php
 require_once '../../includes/header.php';
-
-// 4. Panggil file koneksi.php untuk menghubungkan ke database
 require_once '../../includes/koneksi.php';
+
+$judul_halaman = "Daftar Siswa";
 ?>
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4">Data Siswa</h1>
+    <h1 class="mt-4">Daftar Siswa</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="/sistem-penilaian/dashboard.php">Dashboard</a></li>
-        <li class="breadcrumb-item active">Data Siswa</li>
+        <li class="breadcrumb-item active">Daftar Siswa</li>
     </ol>
 
-    <?php
-    // =================================================================
-    // BLOK PHP UNTUK MENAMPILKAN NOTIFIKASI SETELAH AKSI
-    // =================================================================
-    if (isset($_GET['status'])) {
-        $status = $_GET['status'];
-        $pesan = '';
-        $tipe_alert = 'success';
+    <div class="row">
+        <?php
+        // Ambil data tahun ajaran
+        $query = "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC";
+        $result = mysqli_query($koneksi, $query);
 
-        switch ($status) {
-            case 'sukses_tambah':
-                $pesan = '<strong>Berhasil!</strong> Data siswa baru telah ditambahkan.';
-                break;
-            case 'sukses_edit':
-                $pesan = '<strong>Berhasil!</strong> Data siswa telah diperbarui.';
-                break;
-            case 'sukses_hapus':
-                $pesan = '<strong>Berhasil!</strong> Data siswa telah dihapus.';
-                break;
-            default:
-                $pesan = '<strong>Gagal!</strong> Terjadi kesalahan pada proses data.';
-                $tipe_alert = 'danger';
+        if (mysqli_num_rows($result) > 0) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $status_class = ($row['status_aktif'] == 'Aktif') ? 'border-primary' : '';
+                $bg_class = ($row['status_aktif'] == 'Aktif') ? 'bg-primary text-white' : 'bg-light';
+                // Jika ingin hanya menampilkan tahun (misal 2024), bisa diparsing
+                // Tapi user mungkin ingin label lengkap. Sesuai gambar, hanya tahun (2024, 2023).
+                // Kita asumsi tahun_ajaran formatnya "2023/2024". Ambil bagian depan saja?
+                // Atau tampilkan apa adanya. Gambar menunjukkan "2024", "2023".
+                // Mari ambil 4 digit pertama.
+                $tahun_label = substr($row['tahun_ajaran'], 0, 4);
+                // ATAU gunakan field tahun_ajaran full jika formatnya pendek.
+                // Untuk amannya, tampilkan full dulu, nanti user bisa minta ubah.
+                
+                ?>
+                <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card shadow-sm h-100 <?php echo $status_class; ?>">
+                        <div class="card-body text-center d-flex flex-column align-items-center justify-content-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-alt fa-3x text-secondary"></i>
+                            </div>
+                            <h4 class="card-title fw-bold mb-0"><?php echo htmlspecialchars($row['tahun_ajaran']); ?></h4>
+                            <small class="text-muted"><?php echo htmlspecialchars($row['semester']); ?></small>
+                            <?php if ($row['status_aktif'] == 'Aktif'): ?>
+                                <span class="badge bg-success mt-2">Aktif</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pb-3 text-center">
+                            <a href="siswa_kelas.php?id_tahun=<?php echo $row['id_tahun_ajaran']; ?>" class="btn btn-outline-dark w-100 rounded-pill">
+                                <i class="fas fa-eye me-2"></i> Lihat Daftar Kelas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php
+            }
+        } else {
+            echo '<div class="col-12"><div class="alert alert-info">Belum ada data tahun ajaran.</div></div>';
         }
-
-        echo '<div class="alert alert-' . $tipe_alert . ' alert-dismissible fade show" role="alert">'
-            . $pesan .
-            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>';
-    }
-    ?>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div>
-                <i class="fas fa-table me-1"></i>
-                Daftar Siswa
-            </div>
-            <a href="tambah_siswa.php" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Tambah Siswa
-            </a>
-        </div>
-        <div class="card-body">
-            <table id="datatablesSimple" class="table table-striped table-bordered table-hover">
-                <thead class="table-dark">
-                    <tr class="text-center">
-                        <th>No</th>
-                        <th>NIS</th>
-                        <th>NISN</th>
-                        <th>Nama Lengkap</th>
-                        <th>Kelas</th>
-                        <th>Jenis Kelamin</th>
-                        <th width="170px">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    // Query untuk mengambil data siswa beserta nama kelasnya menggunakan JOIN
-                    $query = "SELECT siswa.*, kelas.nama_kelas 
-                              FROM siswa 
-                              JOIN kelas ON siswa.id_kelas = kelas.id_kelas 
-                              ORDER BY siswa.nama_lengkap ASC";
-                    
-                    $result = mysqli_query($koneksi, $query);
-                    $nomor = 1;
-
-                    if ($result && mysqli_num_rows($result) > 0) {
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            ?>
-                            <tr>
-                                <td class="text-center"><?= $nomor++; ?></td>
-                                <td><?= htmlspecialchars($row['nis']); ?></td>
-                                <td><?= htmlspecialchars($row['nisn']); ?></td>
-                                <td><?= htmlspecialchars($row['nama_lengkap']); ?></td>
-                                <td><?= htmlspecialchars($row['nama_kelas']); ?></td>
-                                <td><?= htmlspecialchars($row['jenis_kelamin']); ?></td>
-                                <td class="text-center">
-                                    <a href="edit_siswa.php?id=<?= $row['id_siswa']; ?>" 
-                                       class="btn btn-warning btn-sm me-2" title="Edit">
-                                       <i class="fas fa-pencil-alt"></i> Edit
-                                    </a>
-                                    <a href="hapus_siswa.php?id=<?= $row['id_siswa']; ?>" 
-                                       class="btn btn-danger btn-sm" 
-                                       onclick="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?');"
-                                       title="Hapus">
-                                       <i class="fas fa-trash"></i> Hapus
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                    } else {
-                        echo "<tr><td colspan='7' class='text-center'>Tidak ada data siswa.</td></tr>";
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
+        ?>
     </div>
 </div>
 
 <?php
-// Panggil file footer.php
 require_once '../../includes/footer.php';
 ?>

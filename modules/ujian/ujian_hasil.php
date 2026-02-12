@@ -22,9 +22,9 @@ if ($id_ujian <= 0) {
 }
 
 // 2. Query Detail Ujian & Validasi Kepemilikan
-$query_detail = "SELECT
-                    u.id_ujian, u.judul_ujian, u.status_ujian,
-                    mp.nama_mapel,
+$query_detail = "SELECT 
+                    u.id_ujian, u.judul_ujian, u.status_ujian, u.jenis_ujian,
+                    mp.nama_mapel, 
                     k.nama_kelas, k.id_kelas,
                     ta.tahun_ajaran, ta.semester
                 FROM ujian u
@@ -98,14 +98,14 @@ mysqli_stmt_close($stmt_detail);
                     <tbody>
                         <?php
                         // Query: Ambil semua siswa di kelas ini, lalu LEFT JOIN ke hasil ujian
-                        $query_hasil = "SELECT
-                                            s.id_siswa, s.nama_lengkap,
-                                            uh.waktu_mulai_mengerjakan, uh.waktu_selesai_mengerjakan, uh.status_pengerjaan, uh.nilai_akhir, uh.id_hasil
+                        $query_hasil = "SELECT 
+                                            s.id_siswa, s.nama_lengkap, 
+                                            uh.id_hasil, uh.waktu_mulai_mengerjakan, uh.waktu_selesai_mengerjakan, uh.status_pengerjaan, uh.nilai_akhir
                                         FROM siswa s
                                         LEFT JOIN ujian_hasil uh ON s.id_siswa = uh.id_siswa AND uh.id_ujian = ?
                                         WHERE s.id_kelas = ?
                                         ORDER BY s.nama_lengkap ASC";
-
+                        
                         $stmt_hasil = mysqli_prepare($koneksi, $query_hasil);
                         mysqli_stmt_bind_param($stmt_hasil, "ii", $id_ujian, $id_kelas_ujian);
                         mysqli_stmt_execute($stmt_hasil);
@@ -115,37 +115,59 @@ mysqli_stmt_close($stmt_detail);
                             $nomor = 1;
                             while ($row = mysqli_fetch_assoc($result_hasil)) {
                                 $status_pengerjaan = $row['status_pengerjaan'] ?? 'Belum'; // Default jika NULL (belum pernah mulai)
-                                $waktu_mulai = $row['waktu_mulai_mengerjakan'] ? date('d M Y, H:i:s', strtotime($row['waktu_mulai_mengerjakan'])) : '-';
-                                $waktu_selesai = $row['waktu_selesai_mengerjakan'] ? date('d M Y, H:i:s', strtotime($row['waktu_selesai_mengerjakan'])) : '-';
-                                $nilai_akhir = ($status_pengerjaan == 'Selesai' || $status_pengerjaan == 'Dinilai') && $row['nilai_akhir'] !== null ? number_format($row['nilai_akhir'], 2) : '-';
+                                
+                                // Format Waktu
+                                $waktu_mulai = ($row['waktu_mulai_mengerjakan']) ? date('d M Y, H:i', strtotime($row['waktu_mulai_mengerjakan'])) : '-';
+                                $waktu_selesai = ($row['waktu_selesai_mengerjakan']) ? date('d M Y, H:i', strtotime($row['waktu_selesai_mengerjakan'])) : '-';
+                                
+                                // Format Nilai
+                                // Jika Esai & Status Selesai tapi belum dinilai, tampilkan 'Menunggu Penilaian'
+                                // Jika PG, tampilkan nilai langsung
+                                $nilai_display = '-';
+                                if ($status_pengerjaan == 'Selesai' || $status_pengerjaan == 'Dinilai') {
+                                    if ($ujian_data['jenis_ujian'] == 'Esai' && $status_pengerjaan == 'Selesai' && $row['nilai_akhir'] == 0) {
+                                        // Asumsi 0 di esai selesai = belum dinilai (atau emang dapat 0, tapi kita anggap pending dulu)
+                                        // Lebih baik cek status 'Dinilai' nanti.
+                                        $nilai_display = '<em>Perlu Dinilai</em>';
+                                    } else {
+                                        $nilai_display = number_format($row['nilai_akhir'], 2);
+                                    }
+                                }
 
                                 // Tentukan warna badge status
-                                $status_badge = 'bg-secondary';
-                                if ($status_pengerjaan == 'Mengerjakan') $status_badge = 'bg-warning text-dark';
-                                if ($status_pengerjaan == 'Selesai') $status_badge = 'bg-info text-dark';
-                                if ($status_pengerjaan == 'Dinilai') $status_badge = 'bg-primary'; // Misal, jika ada proses review manual
+                                $badge_class = 'bg-secondary';
+                                if ($status_pengerjaan == 'Mengerjakan') $badge_class = 'bg-warning text-dark';
+                                elseif ($status_pengerjaan == 'Selesai') $badge_class = 'bg-success';
+                                elseif ($status_pengerjaan == 'Dinilai') $badge_class = 'bg-primary';
 
                                 echo "<tr>";
                                 echo "<td>" . $nomor++ . "</td>";
                                 echo "<td>" . htmlspecialchars($row['nama_lengkap']) . "</td>";
                                 echo "<td>" . $waktu_mulai . "</td>";
                                 echo "<td>" . $waktu_selesai . "</td>";
-                                echo "<td><span class='badge " . $status_badge . "'>" . $status_pengerjaan . "</span></td>";
-                                echo "<td><strong>" . $nilai_akhir . "</strong></td>";
+                                echo "<td><span class='badge " . $badge_class . "'>" . $status_pengerjaan . "</span></td>";
+                                echo "<td><strong>" . $nilai_display . "</strong></td>";
                                 echo "<td>";
-                                // Tambahkan tombol aksi jika diperlukan, misal lihat detail jawaban
+                                
+                                // Tombol Aksi
                                 if ($row['id_hasil']) {
-                                   // echo "<a href='ujian_jawaban_detail.php?id_hasil=" . $row['id_hasil'] . "' class='btn btn-light btn-sm' title='Lihat Jawaban'><i class='fas fa-eye'></i></a>";
-                                   echo "-"; // Sementara belum ada aksi
+                                    if ($ujian_data['jenis_ujian'] == 'Esai' && ($status_pengerjaan == 'Selesai' || $status_pengerjaan == 'Dinilai')) {
+                                        echo "<a href='ujian_periksa.php?id_hasil=" . $row['id_hasil'] . "' class='btn btn-primary btn-sm' title='Periksa & Nilai'><i class='fas fa-clipboard-check'></i> Periksa</a>";
+                                    } else {
+                                        // Untuk PG atau status lain
+                                        echo "<button class='btn btn-secondary btn-sm' disabled><i class='fas fa-eye'></i></button>";
+                                    }
                                 } else {
-                                   echo "-";
+                                    echo "-";
                                 }
+
                                 echo "</td>";
                                 echo "</tr>";
                             }
                         } else {
                             echo "<tr><td colspan='7' class='text-center'>Tidak ada siswa di kelas ini.</td></tr>";
                         }
+                        
                         mysqli_stmt_close($stmt_hasil);
                         mysqli_close($koneksi);
                         ?>

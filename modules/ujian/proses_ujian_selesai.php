@@ -67,7 +67,16 @@ if (!$data_status || $data_status['status_pengerjaan'] !== 'Mengerjakan') {
     exit();
 }
 
-// 5. Ambil Kunci Jawaban
+// 5a. Ambil Jenis Ujian
+$stmt_ju = mysqli_prepare($koneksi, "SELECT jenis_ujian FROM ujian WHERE id_ujian = ?");
+mysqli_stmt_bind_param($stmt_ju, "i", $id_ujian);
+mysqli_stmt_execute($stmt_ju);
+$res_ju = mysqli_stmt_get_result($stmt_ju);
+$data_ju = mysqli_fetch_assoc($res_ju);
+$jenis_ujian = $data_ju['jenis_ujian'] ?? 'Pilihan Ganda';
+mysqli_stmt_close($stmt_ju);
+
+// 5b. Ambil Kunci Jawaban (hanya ID soal jika Esai)
 $kunci_jawaban_db = []; // Format: [id_soal => kunci_huruf]
 $query_kunci = "SELECT id_soal, kunci_jawaban FROM ujian_soal WHERE id_ujian = ?";
 $stmt_kunci = mysqli_prepare($koneksi, $query_kunci);
@@ -90,37 +99,80 @@ mysqli_begin_transaction($koneksi); // Mulai transaksi
 $jumlah_benar = 0;
 
 try {
-    // Siapkan statement untuk update jawaban siswa
-    $query_update_jawaban = "UPDATE ujian_jawaban_siswa SET jawaban_siswa = ?, is_benar = ? WHERE id_hasil = ? AND id_soal = ?";
-    $stmt_update_jawaban = mysqli_prepare($koneksi, $query_update_jawaban);
+    // Siapkan statement di dalam loop atau gunakan satu statement INSERT ON DUPLICATE KEY UPDATE jika supported
+    // Karena kita ingin aman dan kompatibel, kita cek dulu keberadaan data (Upsert manual)
+    
+    // Statement untuk cek
+    $stmt_cek_jawab = mysqli_prepare($koneksi, "SELECT 1 FROM ujian_jawaban_siswa WHERE id_hasil = ? AND id_soal = ?");
+    
+    // Statement untuk insert
+    $stmt_insert_jawab = mysqli_prepare($koneksi, "INSERT INTO ujian_jawaban_siswa (jawaban_siswa, is_benar, id_hasil, id_soal) VALUES (?, ?, ?, ?)");
+    
+    // Statement untuk update
+    $stmt_update_existing = mysqli_prepare($koneksi, "UPDATE ujian_jawaban_siswa SET jawaban_siswa = ?, is_benar = ? WHERE id_hasil = ? AND id_soal = ?");
 
-    // Iterasi melalui SEMUA soal (bukan hanya yang dijawab)
+    // Iterasi melalui SEMUA soal
     foreach ($kunci_jawaban_db as $id_soal => $kunci) {
-        $jawaban_pilihan_siswa = isset($jawaban_siswa_post[$id_soal]) ? $jawaban_siswa_post[$id_soal] : null; // Jawaban siswa dari form
-        $is_benar = 0; // Default salah
+        $jawaban_pilihan_siswa = isset($jawaban_siswa_post[$id_soal]) ? $jawaban_siswa_post[$id_soal] : null; 
+        
+        $is_benar = 0; // Default salah (untuk PG) atau 0 (sementara)
 
-        // Cek jika siswa menjawab soal ini
-        if ($jawaban_pilihan_siswa !== null) {
-            // Bandingkan dengan kunci
-            if ($jawaban_pilihan_siswa == $kunci) {
-                $is_benar = 1;
-                $jumlah_benar++;
+        if ($jenis_ujian == 'Esai') {
+            // Logika Esai:
+            // 1. Simpan jawaban teks (bisa panjang)
+            // 2. Set is_benar = NULL (karena belum dinilai)
+            // 3. Nilai otomatis = 0 (menunggu guru)
+            $is_benar = null; 
+            // Jawaban siswa sudah diambil di atas
+        } else {
+            // Logika Pilihan Ganda:
+            if ($jawaban_pilihan_siswa !== null) {
+                // Bandingkan dengan kunci
+                if ($jawaban_pilihan_siswa == $kunci) {
+                    $is_benar = 1;
+                    $jumlah_benar++;
+                }
+            } else {
+                $jawaban_pilihan_siswa = null;
+            }
+        }
+
+        // Cek apakah data sudah ada
+        // Kita harus reset parameter statement cek
+        mysqli_stmt_bind_param($stmt_cek_jawab, "ii", $id_hasil, $id_soal);
+        if (!mysqli_stmt_execute($stmt_cek_jawab)) {
+             throw new Exception("Gagal mengecek jawaban untuk soal ID: " . $id_soal);
+        }
+        mysqli_stmt_store_result($stmt_cek_jawab);
+        $exists_rows = mysqli_stmt_num_rows($stmt_cek_jawab);
+        mysqli_stmt_free_result($stmt_cek_jawab); // Penting untuk enable next execute
+
+        if ($exists_rows > 0) {
+            // Update
+            mysqli_stmt_bind_param($stmt_update_existing, "ssii", $jawaban_pilihan_siswa, $is_benar, $id_hasil, $id_soal);
+            if (!mysqli_stmt_execute($stmt_update_existing)) {
+                 throw new Exception("Gagal mengupdate jawaban untuk soal ID: " . $id_soal);
             }
         } else {
-            // Jika tidak dijawab, biarkan NULL
-            $jawaban_pilihan_siswa = null;
-        }
-
-        // Update jawaban siswa di database
-        mysqli_stmt_bind_param($stmt_update_jawaban, "siii", $jawaban_pilihan_siswa, $is_benar, $id_hasil, $id_soal);
-        if (!mysqli_stmt_execute($stmt_update_jawaban)) {
-             throw new Exception("Gagal menyimpan jawaban untuk soal ID: " . $id_soal);
+            // Insert
+            mysqli_stmt_bind_param($stmt_insert_jawab, "ssii", $jawaban_pilihan_siswa, $is_benar, $id_hasil, $id_soal);
+            if (!mysqli_stmt_execute($stmt_insert_jawab)) {
+                 throw new Exception("Gagal menyimpan (insert) jawaban untuk soal ID: " . $id_soal);
+            }
         }
     }
-    mysqli_stmt_close($stmt_update_jawaban);
+    
+    // Tutup statement
+    mysqli_stmt_close($stmt_cek_jawab);
+    mysqli_stmt_close($stmt_insert_jawab);
+    mysqli_stmt_close($stmt_update_existing);
 
-    // 7. Hitung Nilai Akhir (Skala 0-100)
-    $nilai_akhir = ($total_soal > 0) ? ($jumlah_benar / $total_soal) * 100 : 0;
+    // 7. Hitung Nilai Akhir
+    if ($jenis_ujian == 'Esai') {
+        $nilai_akhir = 0; // Default untuk esai sebelum dinilai
+    } else {
+        $nilai_akhir = ($total_soal > 0) ? ($jumlah_benar / $total_soal) * 100 : 0;
+    }
 
     // 8. Update Hasil Ujian (Nilai dan Status)
     $query_update_hasil = "UPDATE ujian_hasil 

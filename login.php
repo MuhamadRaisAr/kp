@@ -78,11 +78,8 @@
         }
         // Notifikasi logout
         if(isset($_GET['logout'])) {
-            $last_user_display = isset($_GET['u']) ? htmlspecialchars($_GET['u']) : '';
-            $msg = $last_user_display ? "Sampai jumpa, <strong>$last_user_display</strong>! Anda telah berhasil logout." : "Anda telah berhasil logout.";
-            
             echo '<div class="alert alert-success text-center py-2" role="alert">
-                    ' . $msg . '
+                    Anda telah berhasil logout.
                   </div>';
         }
         // Notifikasi reset password sukses
@@ -134,6 +131,36 @@
             passwordInput.type = 'password';
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
+        }
+    });
+
+    // Auto-hide alerts after 3 seconds
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            setTimeout(() => {
+                alerts.forEach(alert => {
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 500);
+                });
+
+                // Clean URL parameters related to alerts
+                const url = new URL(window.location);
+                let paramsChanged = false;
+                ['logout', 'error', 'status'].forEach(param => {
+                    if (url.searchParams.has(param)) {
+                        url.searchParams.delete(param);
+                        paramsChanged = true;
+                    }
+                });
+
+                if (paramsChanged) {
+                    window.history.replaceState({}, document.title, url);
+                }
+            }, 3000);
         }
     });
 </script>

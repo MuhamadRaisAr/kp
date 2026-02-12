@@ -7,6 +7,11 @@ require_once '../../includes/koneksi.php';
 if (isset($_GET['id'])) {
     $id_siswa = $_GET['id'];
 
+    // Ambil ID Kelas siswa sebelum dihapus untuk redirect
+    $q_kelas = mysqli_query($koneksi, "SELECT id_kelas FROM siswa WHERE id_siswa = $id_siswa");
+    $d_kelas = mysqli_fetch_assoc($q_kelas);
+    $id_kelas = $d_kelas['id_kelas'];
+
     // Gunakan prepared statement untuk keamanan
     $query = "DELETE FROM siswa WHERE id_siswa = ?";
     $stmt = mysqli_prepare($koneksi, $query);
@@ -16,11 +21,11 @@ if (isset($_GET['id'])) {
 
     // Eksekusi statement
     if (mysqli_stmt_execute($stmt)) {
-        // Jika berhasil, redirect ke halaman siswa dengan pesan sukses
-        header("Location: siswa.php?status=sukses_hapus");
+        // Jika berhasil, redirect ke halaman daftar siswa KELAS TERSEBUT dengan pesan sukses
+        header("Location: siswa_list.php?kelas=" . $id_kelas . "&status=sukses_hapus");
     } else {
         // Jika gagal, redirect dengan pesan error
-        header("Location: siswa.php?status=gagal_hapus");
+        header("Location: siswa_list.php?kelas=" . $id_kelas . "&status=gagal_hapus");
     }
 
     // Tutup statement

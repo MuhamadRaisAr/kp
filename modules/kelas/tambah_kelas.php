@@ -31,7 +31,7 @@ $result_guru = mysqli_query($koneksi, $sql_guru);
         </div>
         <div class="card-body">
             
-            <form action="proses_tambah_kelas.php" method="POST">
+            <form action="proses_tambah_kelas.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="nama_kelas" class="form-label">Nama Kelas</label>
                     <input type="text" class="form-control" id="nama_kelas" name="nama_kelas" placeholder="Contoh: XI TKJ 1" required>
@@ -54,6 +54,19 @@ $result_guru = mysqli_query($koneksi, $sql_guru);
                             while ($row = mysqli_fetch_assoc($result_jurusan)) {
                                 echo "<option value='" . $row['id_jurusan'] . "'>" . htmlspecialchars($row['nama_jurusan']) . "</option>";
                             }
+                        }
+                        ?>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_tahun_ajaran" class="form-label">Tahun Ajaran</label>
+                    <select class="form-select" id="id_tahun_ajaran" name="id_tahun_ajaran" required>
+                        <?php
+                        // Ambil tahun ajaran
+                        $q_ta = mysqli_query($koneksi, "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC");
+                        while($rta = mysqli_fetch_assoc($q_ta)) {
+                            $selected = ($rta['status_aktif'] == 'Aktif') ? 'selected' : '';
+                            echo "<option value='".$rta['id_tahun_ajaran']."' $selected>".htmlspecialchars($rta['tahun_ajaran'])." - ".htmlspecialchars($rta['semester'])." (".htmlspecialchars($rta['status_aktif']).")</option>";
                         }
                         ?>
                     </select>

@@ -32,6 +32,29 @@ if (!$selected_tahun) {
          }
     }
 }
+// LOGIKA CEK JUMLAH KELAS
+$show_kelas_filter = true;
+$single_kelas_id = '';
+
+if ($selected_tahun) {
+    $q_cek_kelas = mysqli_query($koneksi, "SELECT DISTINCT id_kelas FROM mengajar WHERE id_guru = $id_guru_login AND id_tahun_ajaran = $selected_tahun");
+    $kelas_diajar = [];
+    while($row = mysqli_fetch_assoc($q_cek_kelas)) {
+        $kelas_diajar[] = $row['id_kelas'];
+    }
+
+    // Jika kelas yang diajar <= 1, sembunyikan filter kelas
+    if (count($kelas_diajar) <= 1) {
+        $show_kelas_filter = false;
+        if (!empty($kelas_diajar)) {
+            $single_kelas_id = $kelas_diajar[0];
+            // Otomatis pilih kelas jika belum ada di URL
+            if (!$selected_kelas) {
+                $selected_kelas = $single_kelas_id;
+            }
+        }
+    }
+}
 ?>
 
 <div class="container-fluid px-4">
@@ -55,50 +78,82 @@ if (!$selected_tahun) {
         <div class="card-body">
             <form method="GET" action="absensi.php">
                 <div class="row">
-                    <div class="col-md-3">
-                        <label for="tanggal" class="form-label">Tanggal</label>
-                        <input type="date" name="tanggal" id="tanggal" class="form-control" value="<?php echo $selected_tanggal; ?>" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="tahun_ajaran" class="form-label">Tahun Ajaran</label>
-                        <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" required onchange="this.form.submit()">
-                             <option value="">-- Pilih Tahun Ajaran --</option>
-                            <?php 
-                            // Ambil SEMUA tahun ajaran, agar guru bisa input absensi ke semester lama
-                            $query_tahun = "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC";
-                            $result_tahun = mysqli_query($koneksi, $query_tahun);
-                            while($row = mysqli_fetch_assoc($result_tahun)) {
-                                $selected = ($row['id_tahun_ajaran'] == $selected_tahun) ? 'selected' : '';
-                                echo "<option value='{$row['id_tahun_ajaran']}' $selected>" . htmlspecialchars($row['tahun_ajaran']) . " - " . htmlspecialchars($row['semester']) . "</option>";
-                            } 
-                            ?>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="kelas" class="form-label">Kelas</label>
-                        <select name="kelas" id="kelas" class="form-select" required>
-                             <option value="">-- Pilih Kelas --</option>
-                            <?php 
-                            // PERBAIKAN: Query kelas sekarang bergantung pada $selected_tahun
-                            if ($selected_tahun) {
-                                $query_kelas = "SELECT DISTINCT k.id_kelas, k.nama_kelas 
-                                                FROM kelas k 
-                                                JOIN mengajar m ON k.id_kelas = m.id_kelas 
-                                                WHERE m.id_guru = {$id_guru_login} AND m.id_tahun_ajaran = {$selected_tahun}
-                                                ORDER BY k.nama_kelas ASC";
-                                $result_kelas = mysqli_query($koneksi, $query_kelas);
-                                while($row = mysqli_fetch_assoc($result_kelas)) {
-                                    $selected = ($row['id_kelas'] == $selected_kelas) ? 'selected' : '';
-                                    echo "<option value='{$row['id_kelas']}' $selected>" . htmlspecialchars($row['nama_kelas']) . "</option>";
+                    <?php if ($show_kelas_filter): ?>
+                        <!-- TAMPILAN JIKA MENGAJAR BANYAK KELAS (DEFAULT) -->
+                        <div class="col-md-3">
+                            <label for="tanggal" class="form-label">Tanggal</label>
+                            <input type="date" name="tanggal" id="tanggal" class="form-control" value="<?php echo $selected_tanggal; ?>" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="tahun_ajaran" class="form-label">Tahun Ajaran</label>
+                            <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" required onchange="this.form.submit()">
+                                 <option value="">-- Pilih Tahun Ajaran --</option>
+                                <?php 
+                                $query_tahun = "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC";
+                                $result_tahun = mysqli_query($koneksi, $query_tahun);
+                                mysqli_data_seek($result_tahun, 0); // Reset pointer
+                                while($row = mysqli_fetch_assoc($result_tahun)) {
+                                    $selected = ($row['id_tahun_ajaran'] == $selected_tahun) ? 'selected' : '';
+                                    // Ambil tahun pertama saja (sebelum tanda /)
+                                    $tahun_saja = explode('/', $row['tahun_ajaran'])[0];
+                                    echo "<option value='{$row['id_tahun_ajaran']}' $selected>" . htmlspecialchars($tahun_saja) . " - " . htmlspecialchars($row['semester']) . "</option>";
+                                } 
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="kelas" class="form-label">Kelas</label>
+                            <select name="kelas" id="kelas" class="form-select" required>
+                                 <option value="">-- Pilih Kelas --</option>
+                                <?php 
+                                if ($selected_tahun) {
+                                    $query_kelas = "SELECT DISTINCT k.id_kelas, k.nama_kelas 
+                                                    FROM kelas k 
+                                                    JOIN mengajar m ON k.id_kelas = m.id_kelas 
+                                                    WHERE m.id_guru = {$id_guru_login} AND m.id_tahun_ajaran = {$selected_tahun}
+                                                    ORDER BY k.nama_kelas ASC";
+                                    $result_kelas = mysqli_query($koneksi, $query_kelas);
+                                    while($row = mysqli_fetch_assoc($result_kelas)) {
+                                        $selected = ($row['id_kelas'] == $selected_kelas) ? 'selected' : '';
+                                        echo "<option value='{$row['id_kelas']}' $selected>" . htmlspecialchars($row['nama_kelas']) . "</option>";
+                                    }
                                 }
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" name="tampilkan" value="1" class="btn btn-primary w-100">Tampilkan Siswa</button>
-                    </div>
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" name="tampilkan" value="1" class="btn btn-primary w-100">Tampilkan</button>
+                        </div>
+
+                    <?php else: ?>
+                        <!-- TAMPILAN SEDERHANA (HANYA 1 KELAS) -->
+                        <input type="hidden" name="kelas" value="<?php echo $single_kelas_id; ?>">
+                        
+                        <div class="col-md-5">
+                            <label for="tanggal" class="form-label">Tanggal</label>
+                            <input type="date" name="tanggal" id="tanggal" class="form-control" value="<?php echo $selected_tanggal; ?>" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="tahun_ajaran" class="form-label">Tahun Ajaran</label>
+                            <select name="tahun_ajaran" id="tahun_ajaran" class="form-select" required onchange="this.form.submit()">
+                                 <option value="">-- Pilih Tahun Ajaran --</option>
+                                <?php 
+                                $query_tahun = "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC";
+                                $result_tahun = mysqli_query($koneksi, $query_tahun);
+                                mysqli_data_seek($result_tahun, 0); 
+                                while($row = mysqli_fetch_assoc($result_tahun)) {
+                                    $selected = ($row['id_tahun_ajaran'] == $selected_tahun) ? 'selected' : '';
+                                    // Ambil tahun pertama saja
+                                    $tahun_saja = explode('/', $row['tahun_ajaran'])[0];
+                                    echo "<option value='{$row['id_tahun_ajaran']}' $selected>" . htmlspecialchars($tahun_saja) . " - " . htmlspecialchars($row['semester']) . "</option>";
+                                } 
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" name="tampilkan" value="1" class="btn btn-primary w-100">Tampilkan</button>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -141,7 +196,7 @@ if (!$selected_tahun) {
             mysqli_stmt_close($stmt_absensi);
         ?>
     <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-user-check me-1"></i>Input Kehadiran Siswa - <?php echo date('d F Y', strtotime($selected_tanggal)); ?></div>
+        <div class="card-header"><i class="fas fa-user-check me-1"></i>Input Kehadiran Siswa - <?php echo date('d F', strtotime($selected_tanggal)); ?></div>
         <div class="card-body">
             <form action="proses_absensi.php" method="POST">
                 <input type="hidden" name="id_mengajar" value="<?php echo $id_mengajar; ?>">
@@ -200,3 +255,7 @@ if (!$selected_tahun) {
         }
     endif; ?>
 </div>
+
+<?php
+require_once '../../includes/footer.php';
+?>

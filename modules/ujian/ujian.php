@@ -124,6 +124,9 @@ $waktu_sekarang = time();
                                 // Tombol Edit (Hanya jika Draft)
                                 echo "<a href='ujian_edit.php?id=" . $row['id_ujian'] . "' class='btn btn-warning btn-sm me-1' title='Edit Ujian'><i class='fas fa-edit'></i></a>";
 
+                                // Tombol Lihat Hasil (Selalu muncul)
+                                echo "<a href='ujian_hasil.php?id=" . $row['id_ujian'] . "' class='btn btn-info btn-sm me-1 text-white' title='Lihat Hasil / Nilai'><i class='fas fa-poll'></i></a>";
+
                                 // Cek apakah ujian sudah lewat / expired
                                 $waktu_selesai_ts = strtotime($row['waktu_selesai']);
                                 if ($row['status_ujian'] != 'Draft' && $waktu_sekarang > $waktu_selesai_ts) {

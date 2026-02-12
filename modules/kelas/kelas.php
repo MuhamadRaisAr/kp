@@ -68,8 +68,8 @@ $judul_halaman = "Data Kelas";
                                 jurusan.nama_jurusan, 
                                 guru.nama_lengkap AS nama_wali_kelas 
                               FROM kelas 
-                              JOIN jurusan ON kelas.id_jurusan = jurusan.id_jurusan 
-                              JOIN guru ON kelas.id_guru_wali_kelas = guru.id_guru 
+                              LEFT JOIN jurusan ON kelas.id_jurusan = jurusan.id_jurusan 
+                              LEFT JOIN guru ON kelas.id_guru_wali_kelas = guru.id_guru 
                               ORDER BY kelas.tingkat, kelas.nama_kelas ASC";
                     
                     $result = mysqli_query($koneksi, $query);
@@ -84,9 +84,6 @@ $judul_halaman = "Data Kelas";
                             echo "<td>" . htmlspecialchars($row['nama_jurusan']) . "</td>";
                             echo "<td>" . htmlspecialchars($row['nama_wali_kelas']) . "</td>";
                             echo "<td>";
-                            // =============================================
-                            // BAGIAN YANG DIPERBARUI ADA DI DUA BARIS INI
-                            // =============================================
                             echo "<a href='edit_kelas.php?id=" . $row['id_kelas'] . "' class='btn btn-warning btn-sm me-2' title='Edit'><i class='fas fa-pencil-alt'></i></a>";
                             echo "<a href='hapus_kelas.php?id=" . $row['id_kelas'] . "' class='btn btn-danger btn-sm' title='Hapus' onclick=\"return confirm('Yakin ingin menghapus data kelas ini? Menghapus kelas akan berpengaruh pada data siswa.');\"><i class='fas fa-trash'></i></a>";
                             echo "</td>";

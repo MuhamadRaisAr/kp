@@ -40,18 +40,66 @@ if ($role == 'admin') {
               JOIN mengajar m ON mp.id_mapel = m.id_mapel 
               WHERE m.id_kelas = ?";
     
+    $param_types = "i";
+    $params = [$id_kelas];
+
+    if (isset($_GET['id_tahun_ajaran']) && !empty($_GET['id_tahun_ajaran'])) {
+        $query .= " AND m.id_tahun_ajaran = ?";
+        $param_types .= "i";
+        $params[] = (int)$_GET['id_tahun_ajaran'];
+    }
+    
     $stmt = mysqli_prepare($koneksi, $query);
-    mysqli_stmt_bind_param($stmt, "i", $id_kelas);
+    mysqli_stmt_bind_param($stmt, $param_types, ...$params);
 
 } elseif ($role == 'guru' && $id_guru_login) {
-    // Jika user adalah guru, hanya ambil mapel yang DIA AJAR di kelas tersebut.
-    $query = "SELECT DISTINCT mp.id_mapel, mp.nama_mapel 
-              FROM mata_pelajaran mp 
-              JOIN mengajar m ON mp.id_mapel = m.id_mapel 
-              WHERE m.id_guru = ? AND m.id_kelas = ?";
-              
+    // Cek apakah guru ini adalah Wali Kelas dari kelas yang dipilih
+    $is_wali_kelas_of_target = false;
+    $stmt_check = mysqli_prepare($koneksi, "SELECT 1 FROM kelas WHERE id_kelas = ? AND id_guru_wali_kelas = ?");
+    mysqli_stmt_bind_param($stmt_check, "ii", $id_kelas, $id_guru_login);
+    mysqli_stmt_execute($stmt_check);
+    mysqli_stmt_store_result($stmt_check);
+    if (mysqli_stmt_num_rows($stmt_check) > 0) {
+        $is_wali_kelas_of_target = true;
+    }
+    mysqli_stmt_close($stmt_check);
+
+    if ($is_wali_kelas_of_target) {
+        // Jika Wali Kelas, ambil SEMUA mapel di kelas tersebut (Sama seperti logic Admin)
+        $query = "SELECT DISTINCT mp.id_mapel, mp.nama_mapel 
+                  FROM mata_pelajaran mp 
+                  JOIN mengajar m ON mp.id_mapel = m.id_mapel 
+                  WHERE m.id_kelas = ?";
+        
+        $param_types = "i";
+        $params = [$id_kelas];
+
+        if (isset($_GET['id_tahun_ajaran']) && !empty($_GET['id_tahun_ajaran'])) {
+            $query .= " AND m.id_tahun_ajaran = ?";
+            $param_types .= "i";
+            $params[] = (int)$_GET['id_tahun_ajaran'];
+        }
+        
+    } else {
+        // Jika BUKAN Wali Kelas (Guru Biasa di kelas ini), hanya ambil mapel yang DIA AJAR
+        $query = "SELECT DISTINCT mp.id_mapel, mp.nama_mapel 
+                  FROM mata_pelajaran mp 
+                  JOIN mengajar m ON mp.id_mapel = m.id_mapel 
+                  WHERE m.id_guru = ? AND m.id_kelas = ?";
+                  
+        $param_types = "ii";
+        $params = [$id_guru_login, $id_kelas];
+    
+        if (isset($_GET['id_tahun_ajaran']) && !empty($_GET['id_tahun_ajaran'])) {
+            $query .= " AND m.id_tahun_ajaran = ?";
+            $param_types .= "i";
+            $params[] = (int)$_GET['id_tahun_ajaran'];
+        }
+    }
+
     $stmt = mysqli_prepare($koneksi, $query);
-    mysqli_stmt_bind_param($stmt, "ii", $id_guru_login, $id_kelas);
+    // Gunakan variadic function ...$params untuk bind_param dinamis
+    mysqli_stmt_bind_param($stmt, $param_types, ...$params);
 }
 
 // --- 4. Eksekusi Query & Ambil Hasil ---

@@ -27,7 +27,7 @@ $judul_halaman = "Tambah Data Jurusan";
         </div>
         <div class="card-body">
             
-            <form action="proses_tambah_jurusan.php" method="POST">
+            <form action="proses_tambah_jurusan.php" method="POST" autocomplete="off">
                 <div class="mb-3">
                     <label for="kode_jurusan" class="form-label">Kode Jurusan</label>
                     <input type="text" class="form-control" id="kode_jurusan" name="kode_jurusan" placeholder="Contoh: TKJ, AKL, OTKP" required>

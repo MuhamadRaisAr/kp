@@ -23,21 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id_soal = isset($_POST['id_soal']) ? (int)$_POST['id_soal'] : 0;
 $id_ujian = isset($_POST['id_ujian']) ? (int)$_POST['id_ujian'] : 0; // Untuk redirect
 $pertanyaan = isset($_POST['pertanyaan']) ? trim($_POST['pertanyaan']) : '';
-$opsi_a = isset($_POST['opsi_a']) ? trim($_POST['opsi_a']) : '';
-$opsi_b = isset($_POST['opsi_b']) ? trim($_POST['opsi_b']) : '';
-$opsi_c = isset($_POST['opsi_c']) ? trim($_POST['opsi_c']) : '';
-$opsi_d = isset($_POST['opsi_d']) ? trim($_POST['opsi_d']) : '';
+$opsi_a = isset($_POST['opsi_a']) ? trim($_POST['opsi_a']) : null;
+$opsi_b = isset($_POST['opsi_b']) ? trim($_POST['opsi_b']) : null;
+$opsi_c = isset($_POST['opsi_c']) ? trim($_POST['opsi_c']) : null;
+$opsi_d = isset($_POST['opsi_d']) ? trim($_POST['opsi_d']) : null;
 $opsi_e = isset($_POST['opsi_e']) ? trim($_POST['opsi_e']) : null; 
-$kunci_jawaban = isset($_POST['kunci_jawaban']) ? trim($_POST['kunci_jawaban']) : '';
+$kunci_jawaban = isset($_POST['kunci_jawaban']) ? trim($_POST['kunci_jawaban']) : null;
 
-// 2. Validasi Data
-if ($id_soal <= 0 || $id_ujian <= 0 || empty($pertanyaan) || empty($opsi_a) || empty($opsi_b) || empty($opsi_c) || empty($opsi_d) || empty($kunci_jawaban)) {
-    header("Location: soal_edit.php?id_soal=" . $id_soal . "&status=gagal_edit&msg=" . urlencode("Data soal tidak lengkap."));
-    exit();
-}
-
-// 3. Validasi Kepemilikan Soal (via Ujian & Guru) & Status 'Draft'
-$query_cek = "SELECT u.status_ujian 
+// 2. Validasi Kepemilikan Soal & Jenis Ujian
+$query_cek = "SELECT u.status_ujian, u.jenis_ujian 
               FROM ujian_soal us
               JOIN ujian u ON us.id_ujian = u.id_ujian
               JOIN mengajar m ON u.id_mengajar = m.id_mengajar
@@ -52,8 +46,23 @@ if (mysqli_num_rows($result_cek) == 0) {
     exit();
 }
 $ujian_data = mysqli_fetch_assoc($result_cek);
-$ujian_data = mysqli_fetch_assoc($result_cek);
-// CHECK REMOVED: if ($ujian_data['status_ujian'] !== 'Draft') { ... }
+$jenis_ujian = $ujian_data['jenis_ujian'] ?? 'Pilihan Ganda';
+
+// 3. Validasi Data Berdasarkan Jenis Ujian
+if ($id_soal <= 0 || $id_ujian <= 0 || empty($pertanyaan)) {
+    header("Location: soal_edit.php?id_soal=" . $id_soal . "&status=gagal_edit&msg=" . urlencode("Data soal tidak lengkap."));
+    exit();
+}
+
+if ($jenis_ujian == 'Pilihan Ganda') {
+    if (empty($opsi_a) || empty($opsi_b) || empty($opsi_c) || empty($opsi_d) || empty($kunci_jawaban)) {
+        header("Location: soal_edit.php?id_soal=" . $id_soal . "&status=gagal_edit&msg=" . urlencode("Opsi jawaban dan kunci wajib diisi."));
+        exit();
+    }
+} else {
+    // Esai, set null
+    $opsi_a = $opsi_b = $opsi_c = $opsi_d = $opsi_e = $kunci_jawaban = null;
+}
 
 // 4. Update Soal di Database
 $query_update = "UPDATE ujian_soal 

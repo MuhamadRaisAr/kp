@@ -54,16 +54,36 @@ if ($role == 'admin') {
     $total_kelas_diajar = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(DISTINCT id_kelas) AS total FROM mengajar WHERE id_guru = {$id_guru_login}"))['total'];
     $total_siswa_diajar = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(DISTINCT id_siswa) AS total FROM siswa WHERE id_kelas IN (SELECT DISTINCT id_kelas FROM mengajar WHERE id_guru = {$id_guru_login})"))['total'];
     // --- DATA GRAFIK UNTUK GURU ---
-    $query_chart_nilai_guru = "SELECT k.nama_kelas, AVG(n.nilai) AS rata_rata
+    $query_chart_nilai_guru = "SELECT k.nama_kelas, mp.nama_mapel, AVG(n.nilai) AS rata_rata
                                 FROM nilai n
                                 JOIN mengajar m ON n.id_mengajar = m.id_mengajar
                                 JOIN kelas k ON m.id_kelas = k.id_kelas
+                                JOIN mata_pelajaran mp ON m.id_mapel = mp.id_mapel
                                 WHERE m.id_guru = {$id_guru_login}
-                                GROUP BY k.nama_kelas ORDER BY rata_rata DESC";
+                                GROUP BY k.nama_kelas, mp.nama_mapel 
+                                ORDER BY rata_rata DESC";
     $result_chart_nilai_guru = mysqli_query($koneksi, $query_chart_nilai_guru);
      while($row = mysqli_fetch_assoc($result_chart_nilai_guru)) {
-        $chart_labels_nilai[] = $row['nama_kelas'];
+        $chart_labels_nilai[] = $row['nama_kelas'] . ' - ' . $row['nama_mapel'];
         $chart_data_nilai[] = round($row['rata_rata'], 2);
+    }
+
+    // --- DATA KHUSUS WALI KELAS ---
+    $is_wali = isset($_SESSION['is_wali']) && $_SESSION['is_wali'];
+    $nama_kelas_wali = isset($_SESSION['nama_kelas_wali']) ? $_SESSION['nama_kelas_wali'] : '';
+    $id_kelas_wali = isset($_SESSION['wali_kelas_id']) ? $_SESSION['wali_kelas_id'] : 0;
+    
+    $total_siswa_wali = 0;
+    $rata_rata_kelas_wali = 0;
+
+    if ($is_wali && $id_kelas_wali > 0) {
+        // Total Siswa di Kelas Wali
+        $q_siswa_wali = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM siswa WHERE id_kelas = '$id_kelas_wali'");
+        $total_siswa_wali = mysqli_fetch_assoc($q_siswa_wali)['total'];
+
+        // Rata-rata Nilai Siswa di Kelas Wali (semua mapel)
+        $q_nilai_wali = mysqli_query($koneksi, "SELECT AVG(nilai) as rata FROM nilai n JOIN siswa s ON n.id_siswa = s.id_siswa WHERE s.id_kelas = '$id_kelas_wali'");
+        $rata_rata_kelas_wali = round(mysqli_fetch_assoc($q_nilai_wali)['rata'] ?? 0, 2);
     }
 
 } elseif ($role == 'siswa' && $id_siswa_login > 0) {
@@ -106,7 +126,7 @@ mysqli_stmt_close($stmt_pengumuman);
     <?php endif; ?>
 
     <h1 class="mt-4">Selamat Datang, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
-    <p class="lead">Anda login sebagai <strong><?php echo htmlspecialchars(ucfirst($role)); ?></strong>.</p>
+    <p class="lead">Anda login sebagai <strong><?php echo htmlspecialchars(ucfirst($role)); ?></strong><?php if(isset($is_wali) && $is_wali) echo ' & <strong>Wali Kelas</strong> (' . htmlspecialchars($nama_kelas_wali) . ')'; ?>.</p>
 
     <div class="row">
         <div class="col-lg-12">
@@ -115,6 +135,7 @@ mysqli_stmt_close($stmt_pengumuman);
                     <i class="fas fa-bullhorn me-1"></i>
                     Pengumuman Terbaru
                 </div>
+                <!-- ... content ... -->
                 <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                     <?php if (!empty($pengumuman_list)): ?>
                         <?php foreach ($pengumuman_list as $pengumuman): ?>
@@ -184,6 +205,47 @@ mysqli_stmt_close($stmt_pengumuman);
             </div>
 
         <?php elseif ($role == 'guru'): ?>
+            <?php if (isset($is_wali) && $is_wali): ?>
+            <!-- AREA KHUSUS WALI KELAS -->
+            <div class="col-12 mb-3">
+                <h5 class="text-primary border-bottom pb-2"><i class="fas fa-user-tie me-2"></i>Area Wali Kelas: <?php echo htmlspecialchars($nama_kelas_wali); ?></h5>
+            </div>
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card bg-info text-white h-100 shadow">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold"><?php echo $total_siswa_wali; ?></div>
+                            <div class="text-uppercase small">Total Siswa Perwalian</div>
+                        </div>
+                        <i class="fas fa-users-cog fa-3x opacity-50"></i>
+                    </div>
+                    <a class="card-footer text-white clearfix small z-1" href="modules/nilai/cetak_rapot.php">
+                        <span class="float-start">Kelola Rapor Siswa</span>
+                        <span class="float-end"><i class="fas fa-angle-right"></i></span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6 mb-4">
+                <div class="card bg-warning text-white h-100 shadow">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold"><?php echo $rata_rata_kelas_wali; ?></div>
+                            <div class="text-uppercase small">Rata-rata Nilai Kelas</div>
+                        </div>
+                        <i class="fas fa-chart-line fa-3x opacity-50"></i>
+                    </div>
+                    <div class="card-footer text-white clearfix small z-1">
+                        <span class="float-start">Indeks Prestasi Kelas</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Spacer/Divider if needed -->
+            <div class="col-12 mb-3 mt-2">
+                <h5 class="text-secondary border-bottom pb-2"><i class="fas fa-chalkboard-teacher me-2"></i>Area Pengajar</h5>
+            </div>
+            <?php endif; ?>
+
+            <!-- AREA GURU BIASA -->
             <div class="col-xl-4 col-md-6 mb-4">
                 <div class="card bg-primary text-white h-100 shadow">
                     <div class="card-body d-flex justify-content-between align-items-center">
@@ -193,7 +255,7 @@ mysqli_stmt_close($stmt_pengumuman);
                         </div>
                         <i class="fas fa-users fa-3x opacity-50"></i>
                     </div>
-                    <a class="card-footer text-white clearfix small z-1" href="nilai.php">
+                    <a class="card-footer text-white clearfix small z-1" href="modules/nilai/nilai.php">
                         <span class="float-start">Kelola Nilai</span>
                         <span class="float-end"><i class="fas fa-angle-right"></i></span>
                     </a>
@@ -208,7 +270,7 @@ mysqli_stmt_close($stmt_pengumuman);
                         </div>
                         <i class="fas fa-chalkboard fa-3x opacity-50"></i>
                     </div>
-                    <a class="card-footer text-white clearfix small z-1" href="mengajar.php">
+                    <a class="card-footer text-white clearfix small z-1" href="modules/mengajar/mengajar.php">
                         <span class="float-start">Lihat Jadwal</span>
                         <span class="float-end"><i class="fas fa-angle-right"></i></span>
                     </a>
@@ -234,7 +296,7 @@ mysqli_stmt_close($stmt_pengumuman);
                     <i class="fas fa-calendar-alt fa-3x opacity-50"></i>
                 </div>
                 <?php if ($role == 'admin'): ?>
-                 <a class="card-footer text-white clearfix small z-1" href="tahun_ajaran.php">
+                 <a class="card-footer text-white clearfix small z-1" href="modules/tahun_ajaran/tahun_ajaran.php">
                     <span class="float-start">Kelola</span>
                     <span class="float-end"><i class="fas fa-angle-right"></i></span>
                 </a>
@@ -261,7 +323,16 @@ mysqli_stmt_close($stmt_pengumuman);
             <div class="col-lg-12">
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header"><i class="fas fa-chart-bar me-1"></i>Rata-rata Nilai per Kelas yang Diajar</div>
-                    <div class="card-body"><canvas id="chartNilaiGuru"></canvas></div>
+                    <div class="card-body">
+                        <?php if (!empty($chart_labels_nilai)): ?>
+                            <canvas id="chartNilaiGuru"></canvas>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-chart-bar fa-3x mb-3 d-block opacity-25"></i>
+                                Belum ada data nilai yang diinput.
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         <?php elseif ($role == 'siswa'): ?>
@@ -280,34 +351,52 @@ require_once 'includes/footer.php';
 document.addEventListener('DOMContentLoaded', function () {
     <?php if ($role == 'admin'): ?>
         const ctxNilaiMapel = document.getElementById('chartNilaiMapel');
-        if (ctxNilaiMapel) { /* ... kode chart admin ... */ }
         const ctxJurusan = document.getElementById('chartJurusan');
-        if (ctxJurusan) { /* ... kode chart admin ... */ }
+        
+        <?php if (!empty($chart_labels_nilai)): ?>
+        if (ctxNilaiMapel) {
+            new Chart(ctxNilaiMapel, {
+                type: 'bar',
+                data: { labels: <?php echo json_encode($chart_labels_nilai); ?>, datasets: [{ label: 'Rata-rata Nilai', data: <?php echo json_encode($chart_data_nilai); ?>, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+                options: { scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+        <?php endif; ?>
+
+        <?php if (!empty($chart_labels_jurusan)): ?>
+        if (ctxJurusan) {
+            new Chart(ctxJurusan, {
+                type: 'pie',
+                data: { labels: <?php echo json_encode($chart_labels_jurusan); ?>, datasets: [{ label: 'Jumlah Siswa', data: <?php echo json_encode($chart_data_jurusan); ?>, backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'] }] }
+            });
+        }
+        <?php endif; ?>
+
     <?php elseif ($role == 'guru'): ?>
         const ctxNilaiGuru = document.getElementById('chartNilaiGuru');
-        if (ctxNilaiGuru) { /* ... kode chart guru ... */ }
+        
+        <?php if (!empty($chart_labels_nilai)): ?>
+        if (ctxNilaiGuru) {
+             new Chart(ctxNilaiGuru, {
+                type: 'bar',
+                data: { 
+                    labels: <?php echo json_encode($chart_labels_nilai); ?>, 
+                    datasets: [{ 
+                        label: 'Rata-rata Nilai Kelas', 
+                        data: <?php echo json_encode($chart_data_nilai); ?>, 
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)', 
+                        borderColor: 'rgba(75, 192, 192, 1)', 
+                        borderWidth: 1 
+                    }] 
+                },
+                options: { 
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        <?php endif; ?>
     <?php endif; ?>
-    // Pastikan kode chart yang lama masih ada di sini
-    // Saya singkat di sini agar tidak terlalu panjang
-    <?php if ($role == 'admin' && !empty($chart_labels_nilai)): ?>
-        new Chart(ctxNilaiMapel, {
-            type: 'bar',
-            data: { labels: <?php echo json_encode($chart_labels_nilai); ?>, datasets: [{ label: 'Rata-rata Nilai', data: <?php echo json_encode($chart_data_nilai); ?>, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
-            options: { scales: { y: { beginAtZero: true, max: 100 } } }
-        });
-    <?php endif; ?>
-     <?php if ($role == 'admin' && !empty($chart_labels_jurusan)): ?>
-        new Chart(ctxJurusan, {
-            type: 'pie',
-            data: { labels: <?php echo json_encode($chart_labels_jurusan); ?>, datasets: [{ label: 'Jumlah Siswa', data: <?php echo json_encode($chart_data_jurusan); ?>, backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'] }] }
-        });
-     <?php endif; ?>
-     <?php if ($role == 'guru' && !empty($chart_labels_nilai)): ?>
-         new Chart(ctxNilaiGuru, {
-            type: 'bar',
-            data: { labels: <?php echo json_encode($chart_labels_nilai); ?>, datasets: [{ label: 'Rata-rata Nilai Kelas', data: <?php echo json_encode($chart_data_nilai); ?>, backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1 }] },
-            options: { scales: { y: { beginAtZero: true, max: 100 } } }
-        });
-     <?php endif; ?>
 });
 </script>

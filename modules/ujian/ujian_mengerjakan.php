@@ -16,7 +16,7 @@ if (
     $_SESSION['role'] !== 'siswa' ||
     empty($_SESSION['id_siswa'])
 ) {
-    header("Location: /sistem-penilaian/login.php");
+    header("Location: " . $base_url . "login.php");
     exit;
 }
 
@@ -159,20 +159,32 @@ mysqli_stmt_close($stmt);
         <?php foreach ($soal as $s): ?>
         <div class="card mb-3">
             <div class="card-body">
-                <strong><?= $s['nomor_soal'] ?>. <?= nl2br(htmlspecialchars($s['pertanyaan'])) ?></strong>
+                <strong>Soal No. <?= $s['nomor_soal'] ?></strong><br>
+                <?= nl2br(htmlspecialchars($s['pertanyaan'])) ?>
 
-                <?php foreach (['A','B','C','D','E'] as $o):
-                    $kol = 'opsi_' . strtolower($o);
-                    if (empty($s[$kol])) continue;
-                ?>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="radio"
-                        name="jawaban[<?= $s['id_soal'] ?>]"
-                        value="<?= $o ?>"
-                        <?= (isset($jawaban[$s['id_soal']]) && $jawaban[$s['id_soal']] === $o) ? 'checked' : '' ?>>
-                    <label class="form-check-label"><?= htmlspecialchars($s[$kol]) ?></label>
-                </div>
-                <?php endforeach; ?>
+                <?php if (isset($ujian['jenis_ujian']) && $ujian['jenis_ujian'] == 'Esai'): ?>
+                    <!-- Form Esai -->
+                    <div class="mt-3">
+                        <textarea class="form-control" name="jawaban[<?= $s['id_soal'] ?>]" rows="5" placeholder="Tulis jawaban Anda di sini..."><?= isset($jawaban[$s['id_soal']]) ? htmlspecialchars($jawaban[$s['id_soal']]) : '' ?></textarea>
+                    </div>
+                <?php else: ?>
+                    <!-- Form Pilihan Ganda -->
+                    <?php foreach (['A','B','C','D','E'] as $o):
+                        $kol = 'opsi_' . strtolower($o);
+                        if (empty($s[$kol])) continue;
+                    ?>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="radio" 
+                               name="jawaban[<?= $s['id_soal'] ?>]" 
+                               value="<?= $o ?>" 
+                               id="opt_<?= $s['id_soal'] ?>_<?= $o ?>"
+                               <?= (isset($jawaban[$s['id_soal']]) && $jawaban[$s['id_soal']] === $o) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="opt_<?= $s['id_soal'] ?>_<?= $o ?>">
+                            <?= $o ?>. <?= htmlspecialchars($s[$kol]) ?>
+                        </label>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>

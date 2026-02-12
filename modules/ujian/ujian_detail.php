@@ -16,7 +16,7 @@ if ($id_ujian <= 0) {
 
 // 2. Query Detail Ujian & Validasi Kepemilikan
 $query_detail = "SELECT 
-                    u.id_ujian, u.judul_ujian, u.durasi_menit, u.waktu_mulai, u.waktu_selesai, u.status_ujian,
+                    u.id_ujian, u.judul_ujian, u.jenis_ujian, u.durasi_menit, u.waktu_mulai, u.waktu_selesai, u.status_ujian,
                     mp.nama_mapel, 
                     k.nama_kelas, 
                     ta.tahun_ajaran, ta.semester
@@ -73,6 +73,7 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     <p><strong>Mapel:</strong> <?php echo htmlspecialchars($ujian_data['nama_mapel']); ?></p>
                     <p><strong>Kelas:</strong> <?php echo htmlspecialchars($ujian_data['nama_kelas']); ?></p>
                     <p><strong>Tahun Ajaran:</strong> <?php echo htmlspecialchars($ujian_data['tahun_ajaran'] . " (" . $ujian_data['semester'] . ")"); ?></p>
+                    <p><strong>Jenis Ujian:</strong> <?php echo htmlspecialchars($ujian_data['jenis_ujian'] ?? 'Pilihan Ganda'); ?></p>
                     <p><strong>Durasi:</strong> <?php echo $ujian_data['durasi_menit']; ?> Menit</p>
                     <p><strong>Jadwal:</strong> <?php echo date('d M Y, H:i', strtotime($ujian_data['waktu_mulai'])) . " s/d " . date('d M Y, H:i', strtotime($ujian_data['waktu_selesai'])); ?></p>
                 </div>
@@ -125,18 +126,6 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     <label class="form-label">Set Waktu Selesai Baru:</label>
                     <input type="datetime-local" class="form-control" name="waktu_selesai_baru" required>
                 </div>
-                <!-- Atau bisa tambahkan opsi instan -->
-                <!-- 
-                <div class="col-md-3">
-                    <label class="form-label">Atau Tambah Durasi:</label>
-                    <select class="form-select" name="tambah_menit">
-                        <option value="0">-- Pilih --</option>
-                        <option value="60">+ 1 Jam dari Sekarang</option>
-                        <option value="120">+ 2 Jam dari Sekarang</option>
-                        <option value="1440">+ 24 Jam dari Sekarang</option>
-                    </select>
-                </div> 
-                -->
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-dark" onclick="return confirm('Apakah Anda yakin ingin memperbarui waktu selesai ujian ini? Siswa akan dapat mengakses ujian kembali.');">
                         <i class="fas fa-unlock-alt me-1"></i> Simpan & Buka
@@ -162,7 +151,7 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
 
     <?php if ($ujian_data['status_ujian'] == 'Draft'): ?>
     <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-plus-circle me-1"></i>Tambah Soal Baru</div>
+        <div class="card-header"><i class="fas fa-plus-circle me-1"></i>Tambah Soal Baru (<?php echo htmlspecialchars($ujian_data['jenis_ujian'] ?? 'Pilihan Ganda'); ?>)</div>
         <div class="card-body">
             <form action="proses_soal_tambah.php" method="POST">
                 <input type="hidden" name="id_ujian" value="<?php echo $id_ujian; ?>">
@@ -172,6 +161,11 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     <textarea class="form-control" name="pertanyaan" rows="3" placeholder="Ketik pertanyaan di sini..." required></textarea>
                 </div>
                 
+                <?php if ($ujian_data['jenis_ujian'] == 'Esai'): ?>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i> Untuk soal esai, Anda tidak perlu mengisi opsi jawaban dan kunci jawaban.
+                    </div>
+                <?php else: ?>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Opsi A</label>
@@ -205,12 +199,15 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                         </select>
                     </div>
                 </div>
+                <?php endif; ?>
                 
                 <button type="submit" class="btn btn-primary">Simpan Soal</button>
             </form>
         </div>
     </div>
-    <?php endif; ?> <div class="card mb-4">
+    <?php endif; ?> 
+    
+    <div class="card mb-4">
         <div class="card-header"><i class="fas fa-list-ol me-1"></i>Bank Soal (<?php echo $total_soal; ?> Soal)</div>
         <div class="card-body">
             <?php
@@ -225,20 +222,24 @@ $ujian_data = mysqli_fetch_assoc($result_detail);
                     echo "<div class='mb-4 p-3 border rounded'>";
                     echo "<strong>" . $soal['nomor_soal'] . ". " . htmlspecialchars($soal['pertanyaan']) . "</strong>";
                     
-                    // Tampilkan Opsi
-                    echo "<ul class='list-unstyled ms-3 mt-2'>";
-                    $opsi = ['A', 'B', 'C', 'D', 'E'];
-                    foreach ($opsi as $o) {
-                        $kolom_opsi = 'opsi_' . strtolower($o); // 'opsi_a', 'opsi_b', dst.
-                        if (!empty($soal[$kolom_opsi])) {
-                            $is_kunci = ($soal['kunci_jawaban'] == $o);
-                            echo "<li class='" . ($is_kunci ? 'text-success fw-bold' : '') . "'>" . 
-                                 $o . ". " . htmlspecialchars($soal[$kolom_opsi]) . 
-                                 ($is_kunci ? " <i class='fas fa-check'></i> (Kunci)" : "") .
-                                 "</li>";
+                    if ($ujian_data['jenis_ujian'] != 'Esai') {
+                        // Tampilkan Opsi
+                        echo "<ul class='list-unstyled ms-3 mt-2'>";
+                        $opsi = ['A', 'B', 'C', 'D', 'E'];
+                        foreach ($opsi as $o) {
+                            $kolom_opsi = 'opsi_' . strtolower($o); // 'opsi_a', 'opsi_b', dst.
+                            if (!empty($soal[$kolom_opsi])) {
+                                $is_kunci = ($soal['kunci_jawaban'] == $o);
+                                echo "<li class='" . ($is_kunci ? 'text-success fw-bold' : '') . "'>" . 
+                                     $o . ". " . htmlspecialchars($soal[$kolom_opsi]) . 
+                                     ($is_kunci ? " <i class='fas fa-check'></i> (Kunci)" : "") .
+                                     "</li>";
+                            }
                         }
+                        echo "</ul>";
+                    } else {
+                        echo "<p class='text-muted ms-3 mt-2'><em>(Soal Esai)</em></p>";
                     }
-                    echo "</ul>";
                     
                     // Tombol Aksi (Edit/Hapus) SELALU MUNCUL (Request User)
                     echo "<div class='mt-2'>
