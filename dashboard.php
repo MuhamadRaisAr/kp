@@ -87,8 +87,14 @@ if ($role == 'admin') {
     }
 
 } elseif ($role == 'siswa' && $id_siswa_login > 0) {
-    // Tidak ada data kartu spesifik untuk siswa di dashboard ini
-    // Data absensi sudah dihapus sebelumnya
+    // Data kelas dan wali kelas
+    $query_siswa_kelas = "SELECT k.nama_kelas, g.nama_lengkap AS nama_wali 
+                          FROM siswa s 
+                          LEFT JOIN kelas k ON s.id_kelas = k.id_kelas 
+                          LEFT JOIN guru g ON k.id_guru_wali_kelas = g.id_guru 
+                          WHERE s.id_siswa = {$id_siswa_login}";
+    $result_siswa_kelas = mysqli_query($koneksi, $query_siswa_kelas);
+    $data_siswa_kelas = mysqli_fetch_assoc($result_siswa_kelas);
 }
 
 // Ambil Tahun Ajaran yang Aktif (dibutuhkan oleh semua role)
@@ -278,7 +284,33 @@ mysqli_stmt_close($stmt_pengumuman);
             </div>
 
         <?php elseif ($role == 'siswa'): ?>
-            <?php endif; ?>
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card bg-info text-white h-100 shadow">
+                     <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-4 fw-bold">
+                                <?php echo !empty($data_siswa_kelas['nama_kelas']) ? htmlspecialchars($data_siswa_kelas['nama_kelas']) : "Belum ditentukan"; ?>
+                            </div>
+                            <div class="text-uppercase small">Kelas Saya</div>
+                        </div>
+                        <i class="fas fa-door-open fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6 col-md-6 mb-4">
+                <div class="card bg-success text-white h-100 shadow">
+                     <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-4 fw-bold">
+                                <?php echo !empty($data_siswa_kelas['nama_wali']) ? htmlspecialchars($data_siswa_kelas['nama_wali']) : "Belum ditentukan"; ?>
+                            </div>
+                            <div class="text-uppercase small">Wali Kelas</div>
+                        </div>
+                        <i class="fas fa-user-tie fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="col-xl-<?php
             if($role == 'admin') echo '3';
