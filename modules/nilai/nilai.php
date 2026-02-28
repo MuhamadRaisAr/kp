@@ -67,12 +67,8 @@ if($selected_tahun) {
 
         <div class="row">
             <?php
-            // Tampilkan hanya tahun ajaran dimana guru ini memiliki jadwal mengajar
-            $query_tahun = "SELECT DISTINCT ta.id_tahun_ajaran, ta.tahun_ajaran, ta.semester, ta.status_aktif
-                            FROM tahun_ajaran ta
-                            JOIN mengajar m ON ta.id_tahun_ajaran = m.id_tahun_ajaran
-                            WHERE m.id_guru = $id_guru_login
-                            ORDER BY ta.tahun_ajaran DESC, ta.semester DESC";
+            // Tampilkan semua tahun ajaran seperti pada Laporan Nilai
+            $query_tahun = "SELECT * FROM tahun_ajaran ORDER BY tahun_ajaran DESC, semester DESC";
                             
             $result_tahun = mysqli_query($koneksi, $query_tahun);
             if (mysqli_num_rows($result_tahun) > 0) {
